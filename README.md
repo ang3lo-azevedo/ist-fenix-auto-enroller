@@ -24,6 +24,15 @@ Quick start
 
     python3 main.py
 
+Releases
+--------
+Prebuilt binaries are published on GitHub Releases for tagged versions (v*).
+
+- Windows: ist-fenix-auto-enroller.exe
+- Linux: ist-fenix-auto-enroller
+
+Release workflow: [.github/workflows/release-builds.yml](.github/workflows/release-builds.yml)
+
 Nix
 ---
 If you use Nix, you can run the app directly or enter a development shell with all dependencies.
@@ -39,9 +48,7 @@ Development shell:
 
 Windows executable
 ------------------
-A GitHub Actions workflow builds a Windows .exe using PyInstaller. You can download the artifact from the workflow run.
-
-Workflow file: .github/workflows/windows-exe.yml
+If you want to build locally, use PyInstaller to create a Windows .exe. GitHub Actions also builds Windows binaries for each release.
 
 How it works
 ------------

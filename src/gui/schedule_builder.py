@@ -27,6 +27,8 @@ class ScheduleBuilderMixin:
         shift_time_map = {}
         shift_campus_map = {}
         shift_grid_map = {}
+        shift_visible_track_map = {}
+        day_header_labels = {}
         cell_shift_info = {}
 
         main_container = tk.Frame(win, bg=bg_primary)
@@ -244,6 +246,17 @@ class ScheduleBuilderMixin:
                         if rowspan > cell_shift_info[cell_key]["rowspan"]:
                             cell_shift_info[cell_key]["rowspan"] = rowspan
 
+                    campus_label = ""
+                    if campuses:
+                        has_alameda = any("alameda" in (c or "").lower() for c in campuses)
+                        has_tagus = any("tagus" in (c or "").lower() for c in campuses)
+                        if has_alameda and has_tagus:
+                            campus_label = "A/T"
+                        elif has_alameda:
+                            campus_label = "A"
+                        elif has_tagus:
+                            campus_label = "T"
+
                     cell_shift_info[cell_key]["shifts"].append({
                         "course_id": course_id,
                         "shift_type": shift_type,
@@ -251,6 +264,7 @@ class ScheduleBuilderMixin:
                         "course_acronym": course_acronym,
                         "course_color": course_color,
                         "campuses": campuses,
+                        "campus_label": campus_label,
                         "start_time": start_time,
                         "end_time": end_time,
                         "day_name": day_name
@@ -331,9 +345,11 @@ class ScheduleBuilderMixin:
             day_base_col[day] = current_col
             for track_idx in range(day_track_counts[day]):
                 grid_container.columnconfigure(current_col + track_idx, weight=1, minsize=100)
-            tk.Label(grid_container, text=day, bg=bg_primary, fg=fg_primary, font=("Segoe UI", 9, "bold"),
-                     relief="flat", borderwidth=0).grid(row=0, column=current_col, columnspan=day_track_counts[day],
+            label = tk.Label(grid_container, text=day, bg=bg_primary, fg=fg_primary, font=("Segoe UI", 9, "bold"),
+                     relief="flat", borderwidth=0)
+            label.grid(row=0, column=current_col, columnspan=day_track_counts[day],
                      sticky="nsew", padx=1, pady=1)
+            day_header_labels[day] = label
             current_col += day_track_counts[day]
 
         for row_idx, time in enumerate(time_slots):
@@ -365,6 +381,47 @@ class ScheduleBuilderMixin:
                 if var and var.get() == sname:
                     selected_slots.append((cid, day_name, s_start, s_end))
 
+            # Recompute tracks per day for visible shifts
+            visible_by_day = {day: [] for day in days}
+            for (cid, stype, sname, start_time, day_name), (s_start, s_end) in shift_time_map.items():
+                campuses = shift_campus_map.get((cid, stype, sname, start_time, day_name), set())
+                if campus_filter != "All" and campus_filter not in campuses:
+                    continue
+                visible_by_day[day_name].append((cid, stype, sname, start_time, s_start, s_end))
+
+            day_track_counts_visible = {}
+            for day in days:
+                entries = sorted(visible_by_day[day], key=lambda e: time_to_minutes(e[4]))
+                track_ends = []
+                for entry in entries:
+                    start_min = time_to_minutes(entry[4])
+                    end_min = time_to_minutes(entry[5])
+                    assigned = False
+                    for idx, end_time_min in enumerate(track_ends):
+                        if start_min >= end_time_min:
+                            track_ends[idx] = end_min
+                            shift_visible_track_map[(entry[0], entry[1], entry[2], entry[3], day)] = idx
+                            assigned = True
+                            break
+                    if not assigned:
+                        shift_visible_track_map[(entry[0], entry[1], entry[2], entry[3], day)] = len(track_ends)
+                        track_ends.append(end_min)
+                day_track_counts_visible[day] = max(1, len(track_ends)) if entries else 1
+
+            # Collapse unused columns and update headers
+            max_visible = max(day_track_counts_visible.values()) if day_track_counts_visible else 1
+            for day in days:
+                base_col = day_base_col[day]
+                visible_count = day_track_counts_visible.get(day, 1)
+                for track_idx in range(max_tracks):
+                    if track_idx < visible_count:
+                        grid_container.columnconfigure(base_col + track_idx, weight=1, minsize=100)
+                    else:
+                        grid_container.columnconfigure(base_col + track_idx, weight=0, minsize=0)
+                label = day_header_labels.get(day)
+                if label:
+                    label.grid_configure(columnspan=visible_count)
+
             for (cid, stype, sname, start_time, day_name), btn in shift_buttons_map.items():
                 campuses = shift_campus_map.get((cid, stype, sname, start_time, day_name), set())
                 grid_info = shift_grid_map.get((cid, stype, sname, start_time, day_name))
@@ -374,7 +431,9 @@ class ScheduleBuilderMixin:
                     btn.configure(state="disabled")
                     continue
                 if grid_info:
-                    btn.grid(row=grid_info[0], column=grid_info[1], rowspan=grid_info[2], sticky="nsew", padx=2, pady=2)
+                    track_idx = shift_visible_track_map.get((cid, stype, sname, start_time, day_name), 0)
+                    base_col = day_base_col.get(day_name, grid_info[1])
+                    btn.grid(row=grid_info[0], column=base_col + track_idx, rowspan=grid_info[2], sticky="nsew", padx=2, pady=2)
 
                 course_color = course_color_map.get(cid, "#e0e0e0")
                 current_selection = course_selections.get(cid, {}).get(stype, None)
@@ -452,9 +511,11 @@ class ScheduleBuilderMixin:
                     return on_click
 
                 btn_fg = get_contrast_text_color(color)
+                campus_tag = shift_info.get("campus_label")
+                extra = f"\n{campus_tag}" if campus_tag else ""
                 shift_btn = tk.Button(
                     grid_container,
-                    text=f"{cacro}\n{stype}\n{sname}",
+                    text=f"{cacro}\n{stype}\n{sname}{extra}",
                     font=("Segoe UI", 8),
                     bg=color,
                     fg=btn_fg,

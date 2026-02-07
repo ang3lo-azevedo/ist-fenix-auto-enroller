@@ -7,11 +7,55 @@ from ..utils import normalize_shift_type
 
 class CourseSelectorMixin:
     """Mixin for course selection functionality"""
-    
+
+    def _normalize_campus_name(self, name: str) -> str:
+        value = (name or "").strip()
+        lower = value.lower()
+        if "alameda" in lower:
+            return "Alameda"
+        if "tagus" in lower:
+            return "Taguspark"
+        return value
+
+    def _degree_implied_campus(self) -> str:
+        acronym = (getattr(self, "selected_degree_acronym", "") or "").upper()
+        if acronym.endswith("-A"):
+            return "Alameda"
+        if acronym.endswith("-T"):
+            return "Taguspark"
+        return ""
+
+    def _course_matches_degree_campus(self, course, implied_campus: str) -> bool:
+        if not implied_campus:
+            return True
+        campuses = set()
+        for name in course.get("campus") or []:
+            normalized = self._normalize_campus_name(name)
+            if normalized:
+                campuses.add(normalized)
+        return implied_campus in campuses
+
+    def _set_courses_loading(self, is_loading: bool):
+        if not hasattr(self, "courses_loading_frame"):
+            return
+        if is_loading:
+            try:
+                self.courses_loading_frame.pack(fill="x", pady=(0, 6))
+                self.courses_loading_bar.start(10)
+            except Exception:
+                pass
+        else:
+            try:
+                self.courses_loading_bar.stop()
+                self.courses_loading_frame.pack_forget()
+            except Exception:
+                pass
+
     def on_semester_selected(self):
         semester = self.semester_combo.get()
         degree_id = self.get_selected_degree_id()
         lang = self.lang_combo.get() or "pt-PT"
+        cache_key = (str(degree_id or ""), lang)
         
         self.log(f"on_semester_selected: semester={semester}, degree_id={degree_id}, lang={lang}", "DEBUG")
 
@@ -25,15 +69,18 @@ class CourseSelectorMixin:
         if lang != self.last_lang:
             self.all_degree_courses = []
             self.last_lang = lang
+            self._courses_cache_key = None
         
         self.api.set_lang(lang)
         self.api.set_academic_term(self.academic_term)
         self.log(f"Loading courses for {semester} ({self.academic_term})...")
         
-        if self.all_degree_courses:
+        if self.all_degree_courses and getattr(self, "_courses_cache_key", None) == cache_key:
             self.log(f"Using cached courses, filtering for {semester}", "DEBUG")
             self.filter_courses_by_semester()
             return
+
+        self._set_courses_loading(True)
         
         def load_thread():
             try:
@@ -46,9 +93,14 @@ class CourseSelectorMixin:
                     degree_acronym=getattr(self, "selected_degree_acronym", "")
                 )
                 self.log(f"Fetched {len(courses)} courses", "DEBUG")
-                self.root.after(0, self.display_available_courses, courses)
+                def apply_courses():
+                    self._courses_cache_key = cache_key
+                    self.display_available_courses(courses)
+                    self._set_courses_loading(False)
+
+                self.root.after(0, apply_courses)
             except Exception as e:
-                self.root.after(0, lambda: self.log(f"Error loading courses: {e}", "ERROR"))
+                self.root.after(0, lambda: (self.log(f"Error loading courses: {e}", "ERROR"), self._set_courses_loading(False)))
         
         threading.Thread(target=load_thread, daemon=True).start()
 
@@ -90,6 +142,7 @@ class CourseSelectorMixin:
         semester = self.semester_combo.get()
         period_filter = self.period_combo.get()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
+        implied_campus = self._degree_implied_campus()
         
         if not courses:
             self.log("No courses found for this degree and semester", "WARNING")
@@ -127,6 +180,10 @@ class CourseSelectorMixin:
 
             if not self.course_matches_period(course, period_filter, allow_missing=False):
                 continue
+
+            if not self._course_matches_degree_campus(course, implied_campus):
+                continue
+
             
             self.available_courses.append(course)
             self.render_course_checkbox(course)
@@ -141,6 +198,8 @@ class CourseSelectorMixin:
                 if not self.course_matches_semester(course, semester):
                     continue
                 if not self.course_matches_period(course, period_filter, allow_missing=True):
+                    continue
+                if not self._course_matches_degree_campus(course, implied_campus):
                     continue
                 self.available_courses.append(course)
                 self.render_course_checkbox(course)
@@ -160,8 +219,9 @@ class CourseSelectorMixin:
         semester = self.semester_combo.get()
         period_filter = self.period_combo.get()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
+        implied_campus = self._degree_implied_campus()
 
-        filtered = [c for c in self.all_degree_courses if self.course_matches_semester(c, semester) and self.course_matches_period(c, period_filter, allow_missing=False)]
+        filtered = [c for c in self.all_degree_courses if self.course_matches_semester(c, semester) and self.course_matches_period(c, period_filter, allow_missing=False) and self._course_matches_degree_campus(c, implied_campus)]
         filtered = sorted(
             filtered,
             key=lambda c: not (str(c.get("id") or c.get("code") or c.get("name")) in current_selected or str(c.get("id") or c.get("code") or c.get("name")) in saved_selected)
@@ -176,7 +236,7 @@ class CourseSelectorMixin:
         if period_filter and len(self.available_courses) == 0:
             self.clear_course_widgets()
             self.available_courses = []
-            filtered = [c for c in self.all_degree_courses if self.course_matches_semester(c, semester) and self.course_matches_period(c, period_filter, allow_missing=True)]
+            filtered = [c for c in self.all_degree_courses if self.course_matches_semester(c, semester) and self.course_matches_period(c, period_filter, allow_missing=True) and self._course_matches_degree_campus(c, implied_campus)]
             filtered = sorted(
                 filtered,
                 key=lambda c: not (str(c.get("id") or c.get("code") or c.get("name")) in current_selected or str(c.get("id") or c.get("code") or c.get("name")) in saved_selected)
@@ -199,6 +259,7 @@ class CourseSelectorMixin:
         semester = self.semester_combo.get()
         period_filter = self.period_combo.get()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
+        implied_campus = self._degree_implied_campus()
 
         filtered = []
         
@@ -212,6 +273,10 @@ class CourseSelectorMixin:
             # Apply period filter
             if not self.course_matches_period(course, period_filter, allow_missing=False):
                 continue
+
+            if not self._course_matches_degree_campus(course, implied_campus):
+                continue
+
 
             if not query or query in name or query in code:
                 filtered.append(course)
@@ -237,6 +302,8 @@ class CourseSelectorMixin:
                     continue
                 if not self.course_matches_period(course, period_filter, allow_missing=True):
                     continue
+                if not self._course_matches_degree_campus(course, implied_campus):
+                    continue
                 if not query or query in name or query in code:
                     filtered.append(course)
 
@@ -257,6 +324,7 @@ class CourseSelectorMixin:
     def update_selected_count(self):
         count = sum(1 for entry in self.course_vars.values() if entry["var"].get())
         self.selected_count_var.set(f"Selected: {count}")
+
 
     def select_all_courses(self):
         for entry in self.course_vars.values():

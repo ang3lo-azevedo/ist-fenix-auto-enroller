@@ -121,7 +121,6 @@ class EnrollmentManagerMixin:
                     "enrollments": self.enrollments,
                     "degree_id": self.get_selected_degree_id(),
                     "lang": self.lang_combo.get() or "pt-PT",
-                    "campus": self.campus_combo.get() or "All",
                     "period": self.period_combo.get() if hasattr(self, "period_combo") else "",
                     "selected_courses": selected_courses,
                     "selected_shifts": self.selected_shifts
@@ -140,8 +139,6 @@ class EnrollmentManagerMixin:
                     self.log(f"Loaded saved degree_id from config: {self._saved_degree_id}", "DEBUG")
                 if data.get("lang"):
                     self.lang_combo.set(data.get("lang"))
-                if data.get("campus"):
-                    self.campus_combo.set(data.get("campus"))
                 if data.get("period"):
                     self.default_period = data.get("period")
                 self.saved_selected_course_ids = {str(cid) for cid in data.get("selected_courses", [])}

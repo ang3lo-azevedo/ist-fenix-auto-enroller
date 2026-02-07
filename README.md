@@ -3,12 +3,13 @@ IST Fenix Auto-Enroller
 
 Desktop Python app for searching, planning, and enrolling in IST courses on FenixEdu. It combines an API client, a Tkinter GUI, and Selenium automation to build schedules and complete enrollment.
 
+<img width="1600" height="867" alt="image" src="https://github.com/user-attachments/assets/f16bfe5b-a079-4c53-aeb7-c461623aa595" />
+
 Highlights
 ----------
 - Search courses by name, code, or acronym
 - Auto-detect shift types from schedule data
 - Build unified schedules for multiple courses
-- Campus filtering (Alameda and Taguspark)
 - Time conflict detection
 - Selenium-based automatic enrollment
 - Persisted configuration (config.json)
@@ -65,3 +66,7 @@ Notes
 -----
 - This project automates a web flow and may break if FenixEdu changes its UI.
 - Use at your own discretion and verify results before final submission.
+
+Credits
+-------
+- https://github.com/joanasesinando/gerador-horarios-ist

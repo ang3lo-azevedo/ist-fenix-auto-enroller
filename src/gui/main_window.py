@@ -261,29 +261,22 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
         main = tk.Frame(scrollable_content, bg=self.BG_PRIMARY, highlightthickness=0)
         main.pack(fill="x", padx=10, pady=10)
         
-        select_frame = tk.LabelFrame(main, text="Select Campus, Degree, Semester & Period", padx=12, pady=8,
+        select_frame = tk.LabelFrame(main, text="Select Degree, Semester & Period", padx=12, pady=8,
                          bg=self.BG_PRIMARY, fg=self.FG_PRIMARY, bd=0, relief="flat", highlightthickness=0,
                          font=("Segoe UI", 10, "bold"))
         select_frame.pack(fill="x", pady=(0, 10))
-        
-        # Campus selection (first)
-        ttk.Label(select_frame, text="Campus:").grid(row=0, column=0, sticky="w")
-        self.campus_combo = ttk.Combobox(select_frame, width=15, values=["All", "Alameda", "Taguspark"], state="readonly", style="Dark.TCombobox")
-        self.campus_combo.grid(row=0, column=1, padx=5, sticky="w")
-        self.campus_combo.set("All")
-        self.campus_combo.bind("<<ComboboxSelected>>", lambda e: self.populate_degrees(self.degrees))
-        
+
         # Semester selection
-        ttk.Label(select_frame, text="Semester:").grid(row=0, column=2, sticky="w", padx=(20, 0))
+        ttk.Label(select_frame, text="Semester:").grid(row=0, column=0, sticky="w")
         self.semester_combo = ttk.Combobox(select_frame, width=15, values=["1st Semester", "2nd Semester"], state="readonly", style="Dark.TCombobox")
-        self.semester_combo.grid(row=0, column=3, padx=5, sticky="w")
+        self.semester_combo.grid(row=0, column=1, padx=5, sticky="w")
         self.semester_combo.set("1st Semester")
         self.semester_combo.bind("<<ComboboxSelected>>", lambda e: self.on_semester_selected())
         
         # Language selection
-        ttk.Label(select_frame, text="Lang:").grid(row=0, column=4, sticky="w", padx=(20, 0))
+        ttk.Label(select_frame, text="Lang:").grid(row=0, column=2, sticky="w", padx=(20, 0))
         self.lang_combo = ttk.Combobox(select_frame, width=12, values=["pt-PT", "en-GB"], state="readonly", style="Dark.TCombobox")
-        self.lang_combo.grid(row=0, column=5, padx=5, sticky="w")
+        self.lang_combo.grid(row=0, column=3, padx=5, sticky="w")
         self.lang_combo.set("pt-PT")
         self.lang_combo.bind("<<ComboboxSelected>>", lambda e: self.on_semester_selected())
         
@@ -316,6 +309,14 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
         degree_scroll = ttk.Scrollbar(select_frame, orient="vertical", command=self.degree_listbox.yview)
         degree_scroll.grid(row=2, column=6, sticky="ns", pady=5)
         self.degree_listbox.configure(yscrollcommand=degree_scroll.set)
+
+        self.degrees_loading_frame = tk.Frame(select_frame, bg=self.BG_PRIMARY)
+        self.degrees_loading_label = ttk.Label(self.degrees_loading_frame, text="Loading degrees...")
+        self.degrees_loading_label.pack(side="left")
+        self.degrees_loading_bar = ttk.Progressbar(self.degrees_loading_frame, mode="indeterminate", length=140)
+        self.degrees_loading_bar.pack(side="left", padx=8)
+        self.degrees_loading_frame.grid(row=3, column=0, columnspan=6, sticky="w", padx=5, pady=(0, 5))
+        self.degrees_loading_frame.grid_remove()
         
         search_frame = tk.LabelFrame(main, text="Search Courses", padx=10, pady=8,
                          bg=self.BG_PRIMARY, fg=self.FG_PRIMARY, bd=0, relief="flat", highlightthickness=0,
@@ -344,6 +345,14 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
                             bg=self.BG_PRIMARY, fg=self.FG_PRIMARY, bd=0, relief="flat", highlightthickness=0,
                             font=("Segoe UI", 10, "bold"))
         courses_label_frame.pack(fill="both", expand=True, pady=(0, 10))
+
+        self.courses_loading_frame = tk.Frame(courses_label_frame, bg=self.BG_PRIMARY)
+        self.courses_loading_label = ttk.Label(self.courses_loading_frame, text="Loading courses...")
+        self.courses_loading_label.pack(side="left")
+        self.courses_loading_bar = ttk.Progressbar(self.courses_loading_frame, mode="indeterminate", length=160)
+        self.courses_loading_bar.pack(side="left", padx=8)
+        self.courses_loading_frame.pack(fill="x", pady=(0, 6))
+        self.courses_loading_frame.pack_forget()
         
         self.courses_canvas = tk.Canvas(courses_label_frame, bg=self.BG_SECONDARY, highlightthickness=0, highlightcolor=self.BG_SECONDARY, selectbackground=self.BG_TERTIARY)
         self.courses_scroll = ttk.Scrollbar(courses_label_frame, orient="vertical", command=self.courses_canvas.yview)

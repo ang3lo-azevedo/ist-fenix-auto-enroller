@@ -25,6 +25,8 @@ class ScheduleBuilderMixin:
         course_selections = {}
         shift_buttons_map = {}
         shift_time_map = {}
+        shift_campus_map = {}
+        shift_grid_map = {}
         cell_shift_info = {}
 
         main_container = tk.Frame(win, bg=bg_primary)
@@ -33,9 +35,20 @@ class ScheduleBuilderMixin:
         controls_frame = tk.Frame(main_container, bg=bg_primary)
         controls_frame.pack(fill="x", pady=(0, 10))
 
-        campus_filter = self.campus_combo.get()
-        tk.Label(controls_frame, text=f"Campus: {campus_filter}", bg=bg_primary, fg=fg_primary,
-                 font=("Segoe UI", 10, "bold")).pack(side="left", padx=10)
+        ttk.Label(controls_frame, text="Campus:").pack(side="left")
+        campus_filter_var = tk.StringVar(value="All")
+        campus_combo = ttk.Combobox(
+            controls_frame,
+            width=15,
+            values=["All", "Alameda", "Taguspark"],
+            state="readonly"
+        )
+        campus_combo.pack(side="left", padx=5)
+        campus_combo.set("All")
+
+        def _campus_filter_value():
+            return campus_combo.get() or "All"
+
 
         grid_frame = tk.Frame(main_container, bg=bg_primary, relief="flat", borderwidth=0)
         grid_frame.pack(fill="both", expand=True)
@@ -189,8 +202,6 @@ class ScheduleBuilderMixin:
                 lessons = shift.get("lessons", [])
 
                 campuses = get_shift_campus(shift)
-                if campus_filter != "All" and campus_filter not in campuses:
-                    continue
 
                 shift_type = None
                 for t in types:
@@ -239,6 +250,7 @@ class ScheduleBuilderMixin:
                         "shift_name": shift_name,
                         "course_acronym": course_acronym,
                         "course_color": course_color,
+                        "campuses": campuses,
                         "start_time": start_time,
                         "end_time": end_time,
                         "day_name": day_name
@@ -335,13 +347,35 @@ class ScheduleBuilderMixin:
                     cell_bg.grid(row=row_idx+1, column=base_col + track_idx, sticky="nsew", padx=1, pady=1)
 
         def update_button_states():
+            campus_filter = _campus_filter_value()
+
+            # Clear selections that are not in the active campus
+            for (cid, stype, sname, start_time, day_name), campuses in shift_campus_map.items():
+                if campus_filter != "All" and campus_filter not in campuses:
+                    var = course_selections.get(cid, {}).get(stype)
+                    if var and var.get() == sname:
+                        var.set("")
+
             selected_slots = []
             for (cid, stype, sname, start_time, day_name), (s_start, s_end) in shift_time_map.items():
+                campuses = shift_campus_map.get((cid, stype, sname, start_time, day_name), set())
+                if campus_filter != "All" and campus_filter not in campuses:
+                    continue
                 var = course_selections.get(cid, {}).get(stype)
                 if var and var.get() == sname:
                     selected_slots.append((cid, day_name, s_start, s_end))
 
             for (cid, stype, sname, start_time, day_name), btn in shift_buttons_map.items():
+                campuses = shift_campus_map.get((cid, stype, sname, start_time, day_name), set())
+                grid_info = shift_grid_map.get((cid, stype, sname, start_time, day_name))
+                if campus_filter != "All" and campus_filter not in campuses:
+                    if grid_info:
+                        btn.grid_remove()
+                    btn.configure(state="disabled")
+                    continue
+                if grid_info:
+                    btn.grid(row=grid_info[0], column=grid_info[1], rowspan=grid_info[2], sticky="nsew", padx=2, pady=2)
+
                 course_color = course_color_map.get(cid, "#e0e0e0")
                 current_selection = course_selections.get(cid, {}).get(stype, None)
                 is_selected = current_selection and current_selection.get() == sname
@@ -384,6 +418,7 @@ class ScheduleBuilderMixin:
             update_button_states()
 
         ttk.Button(controls_frame, text="Clear All", command=clear_all_selections).pack(side="right", padx=10)
+        campus_combo.bind("<<ComboboxSelected>>", lambda _e: update_button_states())
 
         for cell_key, cell_data in cell_shift_info.items():
             shifts_list = cell_data["shifts"]
@@ -436,9 +471,12 @@ class ScheduleBuilderMixin:
                 actual_start = shift_info.get("start_time")
                 actual_end = shift_info.get("end_time")
                 actual_day = shift_info.get("day_name")
+                campuses = shift_info.get("campuses") or set()
                 key = (cid, stype, sname, actual_start, actual_day)
                 shift_buttons_map[key] = shift_btn
                 shift_time_map[key] = (actual_start, actual_end)
+                shift_campus_map[key] = campuses
+                shift_grid_map[key] = (row_idx, col_idx, rowspan)
 
         update_button_states()
         on_content_configure()

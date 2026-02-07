@@ -6,7 +6,23 @@ from ..utils import get_degree_type_name
 
 class DegreeSelectorMixin:
     """Mixin for degree selection functionality"""
-    
+
+    def _set_degrees_loading(self, is_loading: bool):
+        if not hasattr(self, "degrees_loading_frame"):
+            return
+        if is_loading:
+            try:
+                self.degrees_loading_frame.grid()
+                self.degrees_loading_bar.start(10)
+            except Exception:
+                pass
+        else:
+            try:
+                self.degrees_loading_bar.stop()
+                self.degrees_loading_frame.grid_remove()
+            except Exception:
+                pass
+
     def populate_degrees(self, degrees):
         self.degrees = degrees or []
         self.degree_map = {}
@@ -23,20 +39,10 @@ class DegreeSelectorMixin:
 
         sorted_degrees = sorted(self.degrees, key=degree_sort_key)
         
-        # Get selected campus filter
-        campus = self.campus_combo.get() if hasattr(self, 'campus_combo') else "All"
-
         for d in sorted_degrees:
             degree_id = d.get("id")
             acronym = d.get("acronym") or ""
             name = d.get("name") or ""
-            
-            # Filter by campus based on acronym suffix, BUT always include saved degree
-            if campus != "All" and str(degree_id) != saved_id:
-                if campus == "Alameda" and not acronym.endswith("-A"):
-                    continue
-                elif campus == "Taguspark" and not acronym.endswith("-T"):
-                    continue
             
             display_name = f"[{acronym}] {name}" if acronym else name
             labels.append(display_name)
@@ -49,13 +55,15 @@ class DegreeSelectorMixin:
         saved_id = getattr(self, "_saved_degree_id", None)
         self.log(f"populate_degrees: saved_id={saved_id}, selected_degree_id={self.selected_degree_id}", "DEBUG")
         
+        has_saved_courses = bool(getattr(self, "saved_selected_course_ids", set()))
+
         if saved_id and not self.selected_degree_id:
             self.log(f"Attempting to select saved degree: {saved_id}", "DEBUG")
             # Don't let filter_degrees auto-select; we'll do it ourselves
             self.filter_degrees(skip_auto_select=True)
             self.select_degree_by_id(saved_id)
             self.on_degree_selected()  # Trigger course loading
-        elif labels and not self.selected_degree_id:
+        elif labels and not self.selected_degree_id and has_saved_courses:
             self.log(f"No saved degree, selecting first: {labels[0]}", "DEBUG")
             self.filter_degrees(skip_auto_select=True)
             self.select_degree_by_id(self.degree_map.get(labels[0], ""))
@@ -113,13 +121,15 @@ class DegreeSelectorMixin:
         self.on_semester_selected()
     
     def load_degrees_async(self):
+        self._set_degrees_loading(True)
+
         def load_thread():
             try:
                 term = self.academic_term
                 degrees = self.api.get_degrees_all()
                 valid_degrees = [d for d in degrees if term in d.get("academicTerms", [])]
-                self.root.after(0, self.populate_degrees, valid_degrees)
+                self.root.after(0, lambda: (self.populate_degrees(valid_degrees), self._set_degrees_loading(False)))
             except Exception as e:
-                self.root.after(0, lambda: self.log(f"Error loading degrees: {e}", "ERROR"))
+                self.root.after(0, lambda: (self.log(f"Error loading degrees: {e}", "ERROR"), self._set_degrees_loading(False)))
         
         threading.Thread(target=load_thread, daemon=True).start()

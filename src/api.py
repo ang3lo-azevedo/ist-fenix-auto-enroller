@@ -12,6 +12,7 @@ class FenixAPI:
         self.academic_term = academic_term
         self._curriculum_cache = {}
         self._course_pt_cache = {}
+        self._space_cache = {}
         
     def set_lang(self, lang: str):
         if lang:
@@ -68,6 +69,7 @@ class FenixAPI:
                                 course_name = pt_name
                         period_hint = self._extract_period_from_curriculum(course, course_name, curriculum_html)
                     shifts = schedule.get("shifts") or []
+                    campuses = self._extract_course_campus(course, shifts, term, semester_hint)
                     
                     enriched_courses.append({
                         "id": course_id,
@@ -78,7 +80,8 @@ class FenixAPI:
                         "shifts": shifts,
                         "courseLoads": schedule.get("courseLoads", []),
                         "semester_hint": semester_hint,
-                        "period_hint": period_hint
+                        "period_hint": period_hint,
+                        "campus": campuses
                     })
                 return enriched_courses
             
@@ -232,6 +235,79 @@ class FenixAPI:
             return period_from_text(matches[0][1])
         except Exception:
             return ""
+
+    def _extract_course_campus(self, course, shifts, academic_term: str, semester_hint: str):
+        campuses = set()
+        for shift in shifts or []:
+            if not isinstance(shift, dict):
+                continue
+            lessons = shift.get("lessons") or []
+            for lesson in lessons:
+                room = (lesson.get("room") or {})
+                top = (room.get("topLevelSpace") or {})
+                name = (top.get("name") or "").strip()
+                if not name:
+                    space_id = room.get("id") or room.get("roomId") or room.get("spaceId")
+                    if space_id:
+                        name = (self._get_space_top_level_name(str(space_id)) or "").strip()
+                if name:
+                    campuses.add(name)
+        if not campuses:
+            acronym = course.get("acronym") or course.get("code") or ""
+            campuses.update(self._extract_campus_from_course_page(acronym, academic_term, semester_hint))
+        return sorted(campuses)
+
+    def _extract_campus_from_course_page(self, acronym: str, academic_term: str, semester_hint: str):
+        if not acronym or not academic_term:
+            return set()
+        try:
+            sem = str(semester_hint).strip() if semester_hint else ""
+            if sem not in {"1", "2"}:
+                sem = "1"
+            term = academic_term.replace("/", "-")
+            url = f"https://fenix.tecnico.ulisboa.pt/disciplinas/{acronym.lower()}/{term}/{sem}-semestre/turnos"
+            resp = self.session.get(url, params={"lang": self.lang})
+            if not resp.ok:
+                return set()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            campuses = set()
+            for row in soup.select("tbody tr"):
+                cols = row.find_all("td")
+                if len(cols) < 4:
+                    continue
+                room_link = cols[3].find("a")
+                if not room_link:
+                    continue
+                href = room_link.get("href") or ""
+                match = re.search(r"/spaces/(\d+)", href)
+                if not match:
+                    continue
+                space_id = match.group(1)
+                name = (self._get_space_top_level_name(space_id) or "").strip()
+                if name:
+                    campuses.add(name)
+            return campuses
+        except Exception:
+            return set()
+
+    def _get_space_top_level_name(self, space_id: str):
+        if space_id in self._space_cache:
+            return self._space_cache[space_id]
+        try:
+            resp = self.session.get(
+                f"{BASE_URL}/spaces/{space_id}",
+                params={"lang": self.lang}
+            )
+            if resp.ok:
+                data = resp.json() or {}
+                top = data.get("topLevelSpace") or {}
+                name = top.get("name") or data.get("name") or ""
+                self._space_cache[space_id] = name
+                return name
+        except Exception:
+            pass
+        self._space_cache[space_id] = ""
+        return ""
     
     def get_course_schedule(self, course_id: str):
         try:

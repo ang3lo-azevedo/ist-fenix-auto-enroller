@@ -16,11 +16,11 @@ env/
 
 # Logs and captures
 logs/
-*.log
+*.log*
 
 # Local configs
-config.json
-.env
+config.json*
+.env*
 
 # Generated HTML fixtures
 html/

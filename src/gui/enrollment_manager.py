@@ -31,7 +31,7 @@ class EnrollmentManagerMixin:
 
     def _search_project_root_in_home(self, max_depth: int = 4):
         home = Path.home().resolve()
-        markers = {"flake.nix", "README.md", "src/gui/main_window.py"}
+        markers = {"src/gui/main_window.py", "main.py"}
 
         def is_project_root(p: Path) -> bool:
             return any((p / marker).exists() for marker in markers)
@@ -62,11 +62,17 @@ class EnrollmentManagerMixin:
 
     def _find_project_root(self):
         """Find project root by walking up from CWD for known markers."""
-        markers = {"config.json", "flake.nix", "README.md"}
+        markers = {"src/gui/main_window.py", "main.py", "flake.nix", "README.md"}
+        def is_nix_store(path: Path) -> bool:
+            try:
+                return str(path).startswith("/nix/store/")
+            except Exception:
+                return False
+
         env_root = os.environ.get("FENIX_PROJECT_ROOT")
         if env_root:
             root_path = Path(env_root).resolve()
-            if root_path.exists():
+            if root_path.exists() and not is_nix_store(root_path):
                 return root_path
 
         env_pwd = os.environ.get("PWD")
@@ -76,6 +82,8 @@ class EnrollmentManagerMixin:
         candidates.append(Path.cwd().resolve())
 
         for base in candidates:
+            if is_nix_store(base):
+                continue
             for parent in [base, *base.parents]:
                 if any((parent / marker).exists() for marker in markers):
                     return parent

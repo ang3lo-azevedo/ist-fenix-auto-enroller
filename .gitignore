@@ -1,3 +1,8 @@
+# Ignore caches
+__pycache__
+
+# Ignore personal configs
 config.json
+
 # Ignore generated HTML fixtures
 html/

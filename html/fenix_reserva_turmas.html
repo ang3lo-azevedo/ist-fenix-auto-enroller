@@ -1,0 +1,1303 @@
+<!--
+
+    Copyright © 2013 Instituto Superior Técnico
+
+    This file is part of FenixEdu IST Integration.
+
+    FenixEdu IST Integration is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    FenixEdu IST Integration is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with FenixEdu IST Integration.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<!DOCTYPE html>
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if IE 9 ]><html lang="en" class="ie ie9"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html dir="ltr" lang="pt_PT" data-lt-installed="true"><!--<![endif]--><head>
+
+	<!-- Basic Page Needs -->
+	<meta charset="utf-8">
+	<meta http-equiv="Content-Language" content="pt">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="Description" content="FenixEdu™ is an open-source academic information platform.">
+	<meta name="Keywords" content="FenixEdu, open-source, academic, information, platform, academic administration, higher education, e-learning">
+	<meta name="Language" content="pt_PT">
+	<meta name="Robots" content="all">
+	<meta name="Author" content="FenixEdu">
+	<meta name="Email" content="hello@fenixedu.org">
+	<meta name="Copyright" content="Técnico Lisboa — Instituto Superior Técnico">
+	<meta name="Distribution" content="Global">
+	<meta name="Rating" content="General">
+
+	<!-- OpenGraph Specific Metas -->
+	<meta property="og:title" content="FenixEdu™">
+	<meta property="og:type" content="application">
+	<meta property="og:url" content="http://www.fenixedu.org">
+	<meta property="og:site_name" content="FenixEdu">
+	<meta property="og:description" content="FenixEdu™ is an open-source academic information platform.">
+	<meta property="fb:profile_id" content="379238245509413">
+
+	<!-- Mobile Specific Metas -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.5">
+
+    <title>Turmas · Estudante</title>
+
+    <!-- Bootstrap core CSS -->
+	<link rel="stylesheet" type="text/css" media="screen" href="fenix_reserva_turmas_files/general.css">
+    <link href="fenix_reserva_turmas_files/style.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="fenix_reserva_turmas_files/jquery.min.js"></script>
+	<script src="fenix_reserva_turmas_files/bootstrap.min.js"></script>
+	<script> setLang = function(l) {
+		$.post('/api/bennu-core/profile/locale/' + l.replace('_', '-')).always(function() { location.reload(); });
+	}
+	</script>
+	
+	<!-- Favicons & TouchIcons-->
+	<link rel="shortcut icon" type="image/x-icon" href="https://fenix.tecnico.ulisboa.pt/api/bennu-portal/configuration/favicon">
+
+  </head>
+
+  <body>
+  		<!-- Bar -->
+	<div class="navbar navbar-inverse hidden-xs fenixedu-bar">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<a class="navbar-brand" href="https://fenix.tecnico.ulisboa.pt/" target="_blank">Técnico Lisboa</a>
+			</div>
+			<div class="collapse navbar-collapse">
+				<ul class="nav navbar-nav navbar-right">
+				<li></li>
+											<li><a><img src="fenix_reserva_turmas_files/ist1113667.png" width="20" heigth="20" style="margin-right: 10px" class="img-circle">Miguel Torrinha Pereira</a></li>
+												<li class="active"><a href="https://fenix.tecnico.ulisboa.pt/logout">Logout</a></li>
+									</ul>
+			</div>
+		</div>
+	</div>
+	
+	<header class="clearfix" role="banner">
+		<div class="col-sm-2 logo-container text-center">
+			<button type="button" class="navbar-toggle hamburger" data-toggle="collapse" data-target="#topNav">
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+							<a href="http://tecnico.ulisboa.pt/" target="_blank">
+					<img src="fenix_reserva_turmas_files/logo.svg" title="Técnico Lisboa">
+				</a>
+					</div>
+		<nav class="col-sm-10 collapse" id="topNav" role="navigation">
+			<ul class="nav navbar-bottom nav-pills nav-menu">
+							<li class=""><a href="https://fenix.tecnico.ulisboa.pt/messaging">Comunicação</a></li>
+							<li class="active"><a href="https://fenix.tecnico.ulisboa.pt/student">Estudante</a></li>
+							<li class=""><a href="https://fenix.tecnico.ulisboa.pt/personal">Pessoal</a></li>
+							<li class=""><a href="https://fenix.tecnico.ulisboa.pt/space-management">Gestão de Espaços</a></li>
+							<li class=""><a href="https://fenix.tecnico.ulisboa.pt/fenixedu-smart-forms">Formulários</a></li>
+							<li class="visible-xs"><a href="https://fenix.tecnico.ulisboa.pt/logout"><strong>Logout</strong></a></li>
+			</ul>
+		</nav>
+	</header>
+	<div>
+				<main class="col-sm-12" style="padding-top: 0">
+			<div id="main-content-wrapper" style="min-height: 600px">
+				
+
+
+
+
+
+
+
+
+
+<h2>Reserva de Turmas - Resumo</h2>
+
+<p>
+	<span class="error"><!-- Error messages go here --></span>
+</p>
+
+
+
+
+
+
+
+
+
+
+<div>
+	
+	
+
+		<div class="infoop2">
+			<p>Antes de iniciar a reserva de turnos, deve-se inscrever nas disciplinas curriculares que pretende frequentar em: <a href="https://fenix.tecnico.ulisboa.pt/student/studentEnrollmentManagement.do?method=prepare&amp;_request_checksum_=112eae2d775722db7195f47abe480321f455db5d">Inscrição em Disciplinas</a></p>
+			
+		</div>
+
+
+		<ul class="mtop1 mbottom2">
+			<li>
+				<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManagerLookup.do?method=proceedToShiftEnrolment&amp;registrationOID=2254058966484034&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=217ae886870315979dce243b9df733ceb30cb094"><strong>Reservar Turmas e Turnos</strong></a>
+			</li>
+			<li>
+				<a href="https://fenix.tecnico.ulisboa.pt/student/studentTimeTable.do?method=showTimeTable&amp;executionSemesterID=1411231764185091&amp;registrationId=2254058966484034&amp;_request_checksum_=8c506a7d3d3e6b403988cbe7d3acef4999310e09" target="_blank"><strong>Consultar Horário</strong></a>
+			</li>
+			<li>
+				<a href="https://fenix.tecnico.ulisboa.pt/student/showStudentPortal.do?_request_checksum_=6d9e8b6d172a547f9f7a006d41e055f79b95cc13"><strong>Terminar</strong></a>
+			</li>
+		</ul>
+	
+
+
+			
+
+	<div style="background: #fafafa; border: 1px solid #ccc; padding: 0.5em 1em;">
+
+	
+		
+		
+			<p><span class="t_success"><strong>A Reserva de Turmas foi efectuada com sucesso em todas as disciplinas que frequenta.</strong></span></p>
+		
+		
+		
+	
+
+
+	<p class="mtop15 mbottom05"><strong>Disciplinas curriculares em que se encontra inscrito:</strong></p>
+	
+		
+		<table class="tstyle1 mvert05">
+			<tbody><tr>
+				<th>Disciplina</th>
+				<th style="width: 5%;" title="Teórica">T</th>
+				<th style="width: 5%;" title="Prática">P</th>
+				<th style="width: 5%;" title="Laboratório">L</th>
+				<th style="width: 5%;" title="Teórico-prática">TP</th>
+				<th style="width: 5%;" title="Trabalho de Campo">TC</th>
+				<th style="width: 5%;" title="Problemas">Pb</th>
+				<th style="width: 5%;" title="Seminários">S</th>
+				<th style="width: 5%;" title="Estágio">E</th>
+				<th style="width: 5%;" title="Orientação Tutorial">OT</th>
+
+			</tr>			
+			
+				
+				<tr>
+					<td class="disciplina">
+						Introdução aos Algoritmos e Estruturas de Dados - IAED236
+					</td>
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+				</tr>
+			
+				
+				<tr>
+					<td class="disciplina">
+						Elementos de Matemática Discreta - EMD36
+					</td>
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+				</tr>
+			
+				
+				<tr>
+					<td class="disciplina">
+						Cálculo Diferencial e Integral II - CDI936
+					</td>
+					
+					
+					
+						<td></td>
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+				</tr>
+			
+				
+				<tr>
+					<td class="disciplina">
+						Física I - Fis336
+					</td>
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+				</tr>
+			
+				
+				<tr>
+					<td class="disciplina">
+						Introdução à Arquitetura de Computadores - IAC236
+					</td>
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+					
+					
+					
+						
+							<td class="bgdfd acenter">Reservado</td>
+						
+						
+					
+					
+					
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+
+					
+					
+						<td></td>
+																									
+				</tr>
+			
+			</tbody></table>
+		
+	
+					
+		
+		
+	<p class="mtop05"><em style="color: #777;">Tipos de Turno: <strong>T</strong> - Teórico | <strong>P</strong> - Prático | <strong>TP</strong> - Teórico-prático | <strong>L</strong> - Laboratório | <strong>TC</strong> - Trabalho de Campo | <strong>Pb</strong> - Problemas | <strong>S</strong> - Seminários | <strong>E</strong> - Estágio | <strong>OT</strong> - Orientação Tutorial</em></p>
+	
+	</div>
+
+	<p class="mtop3 mbottom05">
+		<strong>Turnos Reservados:</strong>
+	</p>
+	
+		
+	
+	<table class="tstyle2 thlight mtop05">
+		
+		
+			
+			
+				
+					<tbody><tr>
+						<td class="listClasses-subheader" style="text-align:left; background:#4F82B5" colspan="6">
+							Cálculo Diferencial e Integral II
+						</td>
+					</tr>	
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					CDI936TP01
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217734&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=bb528c83d56faa8faedb255b85713d66bcd9e020">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7, 11 - 13, 15 - 16
+					</td>
+					<td style="text-align:center">
+						Teórico-Prática								
+					</td>
+					<td style="text-align:center">
+						sexta
+					</td>
+					<td style="text-align:center">
+						08:30								
+						&nbsp;-&nbsp;
+						10:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								GA1
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7, 11 - 17
+					</td>
+					<td style="text-align:center">
+						Teórico-Prática								
+					</td>
+					<td style="text-align:center">
+						segunda
+					</td>
+					<td style="text-align:center">
+						08:30								
+						&nbsp;-&nbsp;
+						10:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								GA1
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					CDI936PB03
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2536023569465436&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=21b54e087392552b959f08adce14b56ef246e001">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7, 11 - 13, 15 - 16
+					</td>
+					<td style="text-align:center">
+						Problemas								
+					</td>
+					<td style="text-align:center">
+						sexta
+					</td>
+					<td style="text-align:center">
+						10:00								
+						&nbsp;-&nbsp;
+						11:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								V1.07
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+					<tr>
+						<td class="listClasses-subheader" style="text-align:left; background:#4F82B5" colspan="6">
+							Elementos de Matemática Discreta
+						</td>
+					</tr>	
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					EMD36T02
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546218777&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=a05130491944e02202fffce613bd7a8948b6c3b7">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						12 - 17
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						08:00								
+						&nbsp;-&nbsp;
+						10:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.3
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 16
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						08:00								
+						&nbsp;-&nbsp;
+						10:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					EMD36PB06
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546218775&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=6b6741ae292080bcd362726c8071318eb4587561">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						12 - 17
+					</td>
+					<td style="text-align:center">
+						Problemas								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						13:30								
+						&nbsp;-&nbsp;
+						15:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								Q4.2
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 16
+					</td>
+					<td style="text-align:center">
+						Problemas								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						13:00								
+						&nbsp;-&nbsp;
+						15:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								V1.06
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+					<tr>
+						<td class="listClasses-subheader" style="text-align:left; background:#4F82B5" colspan="6">
+							Física I
+						</td>
+					</tr>	
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					Fis336T02
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217558&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=13e2516918126660d40b09cead4dfddadc5d186d">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						08:00								
+						&nbsp;-&nbsp;
+						10:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								GA5
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 2, 4 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						13:00								
+						&nbsp;-&nbsp;
+						15:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								GA5
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					Fis336TP10
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=3380448499597365&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=c040b5a8ae4061968a9cb77b6e5d9f2b29e21106">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Teórico-Prática								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						12:30								
+						&nbsp;-&nbsp;
+						14:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								Q4.6
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 2, 4 - 7
+					</td>
+					<td style="text-align:center">
+						Teórico-Prática								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						15:00								
+						&nbsp;-&nbsp;
+						16:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								V1.11
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+					<tr>
+						<td class="listClasses-subheader" style="text-align:left; background:#4F82B5" colspan="6">
+							Introdução aos Algoritmos e Estruturas de Dados
+						</td>
+					</tr>	
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					IAED236T01
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217302&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=f0f48e40a83e1b6230ca362c56a1aca83ac16c8a">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						segunda
+					</td>
+					<td style="text-align:center">
+						10:30								
+						&nbsp;-&nbsp;
+						12:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						10:30								
+						&nbsp;-&nbsp;
+						11:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 2, 4 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						10:30								
+						&nbsp;-&nbsp;
+						11:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						sexta
+					</td>
+					<td style="text-align:center">
+						12:00								
+						&nbsp;-&nbsp;
+						13:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					IAED236L07
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217293&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=72b8f74d0f786aa5d1ce3dfc31bbc607e209a99c">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Laboratorial								
+					</td>
+					<td style="text-align:center">
+						segunda
+					</td>
+					<td style="text-align:center">
+						15:00								
+						&nbsp;-&nbsp;
+						16:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								LAB 4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						1 - 7
+					</td>
+					<td style="text-align:center">
+						Laboratorial								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						14:00								
+						&nbsp;-&nbsp;
+						15:30
+					</td>
+					<td style="text-align:center">
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+					<tr>
+						<td class="listClasses-subheader" style="text-align:left; background:#4F82B5" colspan="6">
+							Introdução à Arquitetura de Computadores
+						</td>
+					</tr>	
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					IAC236T02
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217402&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=766c483628ace52044b31a3314845add414fd1b7">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 17
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						segunda
+					</td>
+					<td style="text-align:center">
+						12:30								
+						&nbsp;-&nbsp;
+						14:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						12 - 17
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						quinta
+					</td>
+					<td style="text-align:center">
+						11:00								
+						&nbsp;-&nbsp;
+						12:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 16
+					</td>
+					<td style="text-align:center">
+						Teórica								
+					</td>
+					<td style="text-align:center">
+						terça
+					</td>
+					<td style="text-align:center">
+						10:00								
+						&nbsp;-&nbsp;
+						12:00
+					</td>
+					<td style="text-align:center">
+						
+							
+								QA02.4
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+			
+			
+				
+			
+			
+			<tr>
+				<th class="listClasses-header" style="text-align:left" colspan="6">
+					Turno:&nbsp;
+					IAC236L05
+					
+					-
+					<a href="https://fenix.tecnico.ulisboa.pt/student/studentShiftEnrollmentManager.do?method=unEnroleStudentFromShift&amp;registrationOID=2254058966484034&amp;shiftId=2817498546217397&amp;executionSemesterID=1411231764185091&amp;_request_checksum_=7ef28012bb0597d842eeaabbb9d1f88d82841bbf">Anular Reserva</a>
+				</th>
+			</tr>
+
+			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 17
+					</td>
+					<td style="text-align:center">
+						Laboratorial								
+					</td>
+					<td style="text-align:center">
+						segunda
+					</td>
+					<td style="text-align:center">
+						10:00								
+						&nbsp;-&nbsp;
+						11:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								LAB 5
+							
+							
+					</td>
+				</tr>			
+			
+				<tr>
+					<td style="text-align:center">
+						Semana: 
+						11 - 13, 15 - 16
+					</td>
+					<td style="text-align:center">
+						Laboratorial								
+					</td>
+					<td style="text-align:center">
+						sexta
+					</td>
+					<td style="text-align:center">
+						11:00								
+						&nbsp;-&nbsp;
+						12:30
+					</td>
+					<td style="text-align:center">
+						
+							
+								LAB 5
+							
+							
+					</td>
+				</tr>			
+			
+			
+		
+	
+			
+	
+	</tbody></table>
+
+	</div>
+	
+
+			</div>
+		</main>
+	</div>
+		<footer class="clearfix" role="contentinfo">
+		<div class="col-sm-2 text-center">
+			<a class="brand" href="http://fenixedu.org/"><img src="fenix_reserva_turmas_files/logo_fenixedu_footer.svg" alt="Powered by FenixEdu"></a>
+		</div>
+		<p class="col-sm-10">
+			<span>© Instituto Superior Técnico</span>
+			<a href="" onclick="openSupport(); return false;">
+				Formulário de Suporte			</a>
+		</p>
+</footer>
+<div class="modal fade" id="supportModal"></div>
+<script>
+openSupport = function() { $('#supportModal').load('/themes/ashes-ist/supportModal.jsp'); $('#supportModal').modal('show');
+	window.current$functionality = '7400228653090'; };
+</script>
+	
+
+<div id="voila-extension-app" data-v-app=""><div class="Voila_Extension Voila_Extension--dark" data-v-49ecc224=""><!----><!----></div></div></body></html>

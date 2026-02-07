@@ -24,14 +24,51 @@ Quick start
 
     python3 main.py
 
+How to install
+--------------
+Choose one of the options below.
+
+Option A - GitHub Releases (recommended)
+1. Download the latest release for your OS.
+2. Extract the archive.
+3. Run the executable.
+
+Latest release: https://github.com/ang3lo-azevedo/ist-fenix-auto-enroller/releases
+
+Option B - Python source
+1. Clone this repository.
+2. Install dependencies.
+3. Run the app.
+
+    python3 -m pip install -r requirements.txt
+    python3 main.py
+
+Option C - Nix
+1. Run directly or enter a dev shell.
+
+    nix run
+    # or
+    nix develop
+    python3 main.py
+
 Releases
 --------
 Prebuilt binaries are published on GitHub Releases for tagged versions (v*).
+
+Latest release: https://github.com/ang3lo-azevedo/ist-fenix-auto-enroller/releases
 
 - Windows: ist-fenix-auto-enroller.exe
 - Linux: ist-fenix-auto-enroller
 
 Release workflow: [.github/workflows/release-builds.yml](.github/workflows/release-builds.yml)
+
+How to use
+----------
+1. Select your degree, semester, and period.
+2. Search and select the courses you want.
+3. Click [Build] Build Schedule and pick shifts.
+4. Add shifts to the enrollment queue.
+5. Login and start enrollment.
 
 Nix
 ---

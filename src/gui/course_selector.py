@@ -52,7 +52,9 @@ class CourseSelectorMixin:
             return
         if is_loading:
             try:
-                self.courses_loading_frame.pack(fill="x", pady=(0, 6))
+                self.clear_course_widgets()
+                self.courses_canvas.yview_moveto(0)
+                self.courses_loading_frame.pack(fill="x", pady=(16, 10), padx=6)
                 self.courses_loading_bar.start(10)
             except Exception:
                 pass

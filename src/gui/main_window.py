@@ -174,6 +174,17 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
                width=10, arrowsize=0)
         style.map("TScrollbar", background=[("active", self.ACCENT)])
         style.map("Vertical.TScrollbar", background=[("active", self.ACCENT)])
+
+        # Progressbar styling (loading indicators)
+        style.configure(
+            "Loading.Horizontal.TProgressbar",
+            background=self.ACCENT,
+            troughcolor=self.BG_SECONDARY,
+            bordercolor=self.BG_SECONDARY,
+            lightcolor=self.ACCENT_LIGHT,
+            darkcolor=self.ACCENT,
+            thickness=8
+        )
         
         # Checkbutton styling
         style.configure("TCheckbutton", background=self.BG_PRIMARY, foreground=self.FG_PRIMARY, font=("Segoe UI", 10))
@@ -345,14 +356,6 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
                             font=("Segoe UI", 10, "bold"))
         courses_label_frame.pack(fill="both", expand=True, pady=(0, 10))
 
-        self.courses_loading_frame = tk.Frame(courses_label_frame, bg=self.BG_PRIMARY)
-        self.courses_loading_label = ttk.Label(self.courses_loading_frame, text="Loading courses...")
-        self.courses_loading_label.pack(side="left")
-        self.courses_loading_bar = ttk.Progressbar(self.courses_loading_frame, mode="indeterminate", length=160)
-        self.courses_loading_bar.pack(side="left", padx=8)
-        self.courses_loading_frame.pack(fill="x", pady=(0, 6))
-        self.courses_loading_frame.pack_forget()
-        
         self.courses_canvas = tk.Canvas(courses_label_frame, bg=self.BG_SECONDARY, highlightthickness=0, highlightcolor=self.BG_SECONDARY, selectbackground=self.BG_TERTIARY)
         self.courses_scroll = ttk.Scrollbar(courses_label_frame, orient="vertical", command=self.courses_canvas.yview)
         self.courses_container = tk.Frame(self.courses_canvas, bg=self.BG_SECONDARY, highlightthickness=0)
@@ -364,6 +367,23 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
         
         self.courses_canvas.create_window((0, 0), window=self.courses_container, anchor="nw")
         self.courses_canvas.configure(yscrollcommand=self.courses_scroll.set)
+
+        # Loading indicator inside results area
+        self.courses_loading_frame = tk.Frame(self.courses_container, bg=self.BG_SECONDARY)
+        self.courses_loading_label = tk.Label(
+            self.courses_loading_frame,
+            text="Loading courses...",
+            bg=self.BG_SECONDARY,
+            fg=self.FG_SECONDARY,
+            font=("Segoe UI", 10, "italic")
+        )
+        self.courses_loading_label.pack(fill="x", pady=(6, 6))
+        self.courses_loading_bar = ttk.Progressbar(
+            self.courses_loading_frame,
+            mode="indeterminate",
+            style="Loading.Horizontal.TProgressbar"
+        )
+        self.courses_loading_bar.pack(fill="x", padx=12, pady=(0, 6))
         
         # Add mousewheel binding to courses canvas
         def on_courses_mousewheel(event):

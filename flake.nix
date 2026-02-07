@@ -1,5 +1,5 @@
 {
-  description = "Fenix Auto-Enroller";
+  description = "IST Fenix Auto Enroller by nos4a2 (Ângelo Azevedo)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -19,7 +19,7 @@
       
     in {
       packages.${system}.default = pkgs.stdenv.mkDerivation {
-        name = "fenix-enroller";
+        name = "ist-fenix-auto-enroller";
         src = ./.;
         
         buildInputs = [ pythonEnv ];
@@ -28,7 +28,7 @@
           mkdir -p $out/bin $out/app
           cp -r main.py src/ $out/app/
           
-          cat > $out/bin/fenix-enroller << EOL
+          cat > $out/bin/ist-fenix-auto-enroller << EOL
           #!/bin/sh
           cd $out/app
           export CHROME_BIN="${pkgs.chromium}/bin/chromium"
@@ -36,8 +36,13 @@
           exec ${pythonEnv}/bin/python main.py
           EOL
           
-          chmod +x $out/bin/fenix-enroller
+          chmod +x $out/bin/ist-fenix-auto-enroller
         '';
+      };
+
+      apps.${system}.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/ist-fenix-auto-enroller";
       };
 
       devShells.${system}.default = pkgs.mkShell {

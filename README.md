@@ -3,7 +3,9 @@ IST Fenix Auto-Enroller
 
 Desktop Python app for searching, planning, and enrolling in IST courses on FenixEdu. It combines an API client, a Tkinter GUI, and Selenium automation to build schedules and complete enrollment.
 
-<img width="1600" height="867" alt="image" src="https://github.com/user-attachments/assets/f16bfe5b-a079-4c53-aeb7-c461623aa595" />
+<img width="1911" height="1043" alt="image" src="https://github.com/user-attachments/assets/927d7267-1a6b-463e-9e31-279fe9e2126b" />
+
+<img width="1915" height="1038" alt="image" src="https://github.com/user-attachments/assets/ac8772dd-6b26-456b-b310-6891c79034ff" />
 
 Highlights
 ----------

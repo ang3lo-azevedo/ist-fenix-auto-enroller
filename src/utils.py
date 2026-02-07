@@ -1,5 +1,4 @@
 from datetime import datetime
-from .config import SHIFT_TYPES, DEGREE_TYPE_ORDER
 
 
 def normalize_shift_type(raw_value: str):

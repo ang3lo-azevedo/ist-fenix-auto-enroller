@@ -31,17 +31,23 @@ Option B - Python source
 1. Clone this repository.
 2. Install dependencies.
 3. Run the app.
-
-    python3 -m pip install -r requirements.txt
-    python3 main.py
+```sh
+python3 -m pip install -r requirements.txt
+python3 main.py
+```
 
 Option C - Nix
 1. Run directly or enter a dev shell.
 
-    nix run
-    # or
-    nix develop
-    python3 main.py
+```sh
+nix run
+```
+or
+
+```sh
+nix develop
+python3 main.py
+```
 
 How to use
 ----------

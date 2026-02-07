@@ -1,2 +1,3 @@
 config.json
-html/*
+# Ignore generated HTML fixtures
+html/

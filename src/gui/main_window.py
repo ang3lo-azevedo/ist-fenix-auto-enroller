@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-import threading
 from datetime import datetime
 
 from ..api import FenixAPI

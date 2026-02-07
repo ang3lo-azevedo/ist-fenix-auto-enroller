@@ -1,5 +1,3 @@
-import tkinter as tk
-from tkinter import ttk
 import threading
 from ..utils import get_degree_type_name
 

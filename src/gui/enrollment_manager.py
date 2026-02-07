@@ -1,4 +1,3 @@
-import tkinter as tk
 from tkinter import messagebox, simpledialog
 import json
 import os
@@ -32,10 +31,10 @@ class EnrollmentManagerMixin:
 
     def _search_project_root_in_home(self, max_depth: int = 4):
         home = Path.home().resolve()
-        expected_file = Path("src/gui/main_window.py")
+        markers = {"flake.nix", "README.md", "src/gui/main_window.py"}
 
         def is_project_root(p: Path) -> bool:
-            return (p / expected_file).exists() and (p / "config.json").exists()
+            return any((p / marker).exists() for marker in markers)
 
         if is_project_root(home):
             return home

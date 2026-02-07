@@ -1,12 +1,24 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
 import threading
 from datetime import datetime
-from ..utils import normalize_shift_type
 
 
 class CourseSelectorMixin:
     """Mixin for course selection functionality"""
+
+    def _get_courses_cache_key(self, degree_id: str, lang: str):
+        return (str(degree_id or ""), lang)
+
+    def _reset_course_cache(self):
+        self.all_degree_courses = []
+        self._courses_cache_key = None
+
+    def _get_selected_semester(self):
+        return self.semester_combo.get()
+
+    def _get_selected_period(self):
+        return self.period_combo.get()
 
     def _normalize_campus_name(self, name: str) -> str:
         value = (name or "").strip()
@@ -52,10 +64,10 @@ class CourseSelectorMixin:
                 pass
 
     def on_semester_selected(self):
-        semester = self.semester_combo.get()
+        semester = self._get_selected_semester()
         degree_id = self.get_selected_degree_id()
         lang = self.lang_combo.get() or "pt-PT"
-        cache_key = (str(degree_id or ""), lang)
+        cache_key = self._get_courses_cache_key(degree_id, lang)
         
         self.log(f"on_semester_selected: semester={semester}, degree_id={degree_id}, lang={lang}", "DEBUG")
 
@@ -67,9 +79,8 @@ class CourseSelectorMixin:
             return
         
         if lang != self.last_lang:
-            self.all_degree_courses = []
+            self._reset_course_cache()
             self.last_lang = lang
-            self._courses_cache_key = None
         
         self.api.set_lang(lang)
         self.api.set_academic_term(self.academic_term)
@@ -117,7 +128,7 @@ class CourseSelectorMixin:
         self.update_period_options()
 
     def update_period_options(self):
-        semester = self.semester_combo.get()
+        semester = self._get_selected_semester()
         if semester == "2nd Semester":
             options = ["P3", "P4"]
             default = "P3"
@@ -140,7 +151,7 @@ class CourseSelectorMixin:
         self.all_degree_courses = []
         self.course_vars = {}
         semester = self.semester_combo.get()
-        period_filter = self.period_combo.get()
+        period_filter = self._get_selected_period()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
         implied_campus = self._degree_implied_campus()
         
@@ -216,8 +227,8 @@ class CourseSelectorMixin:
         self.clear_course_widgets()
         self.available_courses = []
         self.course_vars = {}
-        semester = self.semester_combo.get()
-        period_filter = self.period_combo.get()
+        semester = self._get_selected_semester()
+        period_filter = self._get_selected_period()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
         implied_campus = self._degree_implied_campus()
 
@@ -256,8 +267,8 @@ class CourseSelectorMixin:
         self._current_selected_cache = set(current_selected)
         self.clear_course_widgets()
         self.available_courses = []
-        semester = self.semester_combo.get()
-        period_filter = self.period_combo.get()
+        semester = self._get_selected_semester()
+        period_filter = self._get_selected_period()
         saved_selected = getattr(self, "saved_selected_course_ids", set())
         implied_campus = self._degree_implied_campus()
 
@@ -387,8 +398,8 @@ class CourseSelectorMixin:
 
     def on_build_schedule_clicked(self):
         selected_courses = []
-        semester = self.semester_combo.get()
-        period_filter = self.period_combo.get()
+        semester = self._get_selected_semester()
+        period_filter = self._get_selected_period()
         for entry in self.course_vars.values():
             if entry["var"].get():
                 course = entry["course"]

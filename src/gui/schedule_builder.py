@@ -38,7 +38,6 @@ class ScheduleBuilderMixin:
         controls_frame.pack(fill="x", pady=(0, 10))
 
         ttk.Label(controls_frame, text="Campus:").pack(side="left")
-        campus_filter_var = tk.StringVar(value="All")
         campus_combo = ttk.Combobox(
             controls_frame,
             width=15,
@@ -50,6 +49,19 @@ class ScheduleBuilderMixin:
 
         def _campus_filter_value():
             return campus_combo.get() or "All"
+
+        def _campus_tag(campuses):
+            if not campuses:
+                return ""
+            has_alameda = any("alameda" in (c or "").lower() for c in campuses)
+            has_tagus = any("tagus" in (c or "").lower() for c in campuses)
+            if has_alameda and has_tagus:
+                return "A/T"
+            if has_alameda:
+                return "A"
+            if has_tagus:
+                return "T"
+            return ""
 
 
         grid_frame = tk.Frame(main_container, bg=bg_primary, relief="flat", borderwidth=0)
@@ -246,16 +258,7 @@ class ScheduleBuilderMixin:
                         if rowspan > cell_shift_info[cell_key]["rowspan"]:
                             cell_shift_info[cell_key]["rowspan"] = rowspan
 
-                    campus_label = ""
-                    if campuses:
-                        has_alameda = any("alameda" in (c or "").lower() for c in campuses)
-                        has_tagus = any("tagus" in (c or "").lower() for c in campuses)
-                        if has_alameda and has_tagus:
-                            campus_label = "A/T"
-                        elif has_alameda:
-                            campus_label = "A"
-                        elif has_tagus:
-                            campus_label = "T"
+                    campus_label = _campus_tag(campuses)
 
                     cell_shift_info[cell_key]["shifts"].append({
                         "course_id": course_id,
@@ -580,6 +583,8 @@ class ScheduleBuilderMixin:
     def create_tooltip(self, widget, text):
         """Create hover tooltip for widgets"""
         def show_tooltip(event):
+            bg_secondary = getattr(self, "BG_SECONDARY", "#1a1a1a")
+            fg_primary = getattr(self, "FG_PRIMARY", "#ffffff")
             tooltip = tk.Toplevel()
             tooltip.wm_overrideredirect(True)
             tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")

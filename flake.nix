@@ -30,6 +30,8 @@
           
           cat > $out/bin/ist-fenix-auto-enroller << EOL
           #!/bin/sh
+          ROOT="''${FENIX_PROJECT_ROOT:-$PWD}"
+          export FENIX_PROJECT_ROOT="$ROOT"
           cd $out/app
           export CHROME_BIN="${pkgs.chromium}/bin/chromium"
           export CHROMEDRIVER_PATH="${pkgs.chromedriver}/bin/chromedriver"

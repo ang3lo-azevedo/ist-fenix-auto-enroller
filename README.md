@@ -34,6 +34,12 @@ Development shell:
     nix develop
     python3 main.py
 
+Windows executable
+------------------
+A GitHub Actions workflow builds a Windows .exe using PyInstaller. You can download the artifact from the workflow run.
+
+Workflow file: .github/workflows/windows-exe.yml
+
 How it works
 ------------
 1. Select a degree.

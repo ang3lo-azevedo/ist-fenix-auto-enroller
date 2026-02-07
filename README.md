@@ -16,14 +16,6 @@ Highlights
 - Selenium-based automatic enrollment
 - Persisted configuration (config.json)
 
-Quick start
------------
-1. Ensure Python 3 is installed.
-2. Install dependencies.
-3. Run the app.
-
-    python3 main.py
-
 How to install
 --------------
 Choose one of the options below.
@@ -51,17 +43,6 @@ Option C - Nix
     nix develop
     python3 main.py
 
-Releases
---------
-Prebuilt binaries are published on GitHub Releases for tagged versions (v*).
-
-Latest release: https://github.com/ang3lo-azevedo/ist-fenix-auto-enroller/releases
-
-- Windows: ist-fenix-auto-enroller.exe
-- Linux: ist-fenix-auto-enroller
-
-Release workflow: [.github/workflows/release-builds.yml](.github/workflows/release-builds.yml)
-
 How to use
 ----------
 1. Select your degree, semester, and period.
@@ -69,31 +50,6 @@ How to use
 3. Click [Build] Build Schedule and pick shifts.
 4. Add shifts to the enrollment queue.
 5. Login and start enrollment.
-
-Nix
----
-If you use Nix, you can run the app directly or enter a development shell with all dependencies.
-
-Run without entering a shell:
-
-    nix run
-
-Development shell:
-
-    nix develop
-    python3 main.py
-
-Windows executable
-------------------
-If you want to build locally, use PyInstaller to create a Windows .exe. GitHub Actions also builds Windows binaries for each release.
-
-How it works
-------------
-1. Select a degree.
-2. Search and choose courses.
-3. Review available shifts and detect conflicts.
-4. Enter your FenixEdu credentials.
-5. Enroll using the automated flow.
 
 Project structure
 -----------------

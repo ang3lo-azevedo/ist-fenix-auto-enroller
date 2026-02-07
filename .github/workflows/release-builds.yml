@@ -1,5 +1,8 @@
 name: Build and release executables
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
     inputs:

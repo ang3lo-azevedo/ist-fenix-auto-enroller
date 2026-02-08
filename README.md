@@ -51,7 +51,7 @@ Option C - Python source
 2. Install dependencies.
 3. Run the app.
 ```sh
-python3 -m pip install -r requirements.txt
+python3 -m pip install selenium requests beautifulsoup4
 python3 main.py
 ```
 

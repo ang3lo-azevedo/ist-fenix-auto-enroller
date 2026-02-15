@@ -392,9 +392,20 @@ class CourseSelectorMixin:
                         elif semester == "2nd Semester":
                             periods.extend(["P3", "P4"])
 
-        # If still no period info
+        # If still no period info, treat as full-semester course
+        # Full-semester courses should appear for any period in their semester
         if not periods:
-            return True if allow_missing else False
+            if allow_missing:
+                return True
+            
+            # Check if course belongs to the correct semester based on period_filter
+            semester_hint = course.get("semester_hint", "")
+            if period_filter in ["P1", "P2"] and semester_hint == "1":
+                return True  # 1st semester full-semester course
+            if period_filter in ["P3", "P4"] and semester_hint == "2":
+                return True  # 2nd semester full-semester course
+            
+            return False
 
         return period_filter in set(periods)
 

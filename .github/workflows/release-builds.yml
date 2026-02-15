@@ -37,13 +37,13 @@ jobs:
       - name: Build Windows executable
         shell: pwsh
         run: |
-          pyinstaller --onefile --windowed main.py --name ist-fenix-auto-enroller
+          pyinstaller --onefile --windowed main.py --name ist-fenix-auto-enroller-windows-x64 --hidden-import=requests --hidden-import=bs4 --hidden-import=selenium
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ist-fenix-auto-enroller-windows
-          path: dist/ist-fenix-auto-enroller.exe
+          name: ist-fenix-auto-enroller-windows-x64
+          path: dist/ist-fenix-auto-enroller-windows-x64.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -66,14 +66,14 @@ jobs:
 
       - name: Build Linux executable
         run: |
-          pyinstaller --onefile main.py --name ist-fenix-auto-enroller
-          chmod +x dist/ist-fenix-auto-enroller
+          pyinstaller --onefile main.py --name ist-fenix-auto-enroller-linux-x64 --hidden-import=requests --hidden-import=bs4 --hidden-import=selenium
+          chmod +x dist/ist-fenix-auto-enroller-linux-x64
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ist-fenix-auto-enroller-linux
-          path: dist/ist-fenix-auto-enroller
+          name: ist-fenix-auto-enroller-linux-x64
+          path: dist/ist-fenix-auto-enroller-linux-x64
 
   release:
     runs-on: ubuntu-latest
@@ -91,5 +91,5 @@ jobs:
           tag_name: ${{ inputs.tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
           files: |
-            dist/ist-fenix-auto-enroller-windows/ist-fenix-auto-enroller.exe
-            dist/ist-fenix-auto-enroller-linux/ist-fenix-auto-enroller
+            dist/ist-fenix-auto-enroller-windows-x64/ist-fenix-auto-enroller-windows-x64.exe
+            dist/ist-fenix-auto-enroller-linux-x64/ist-fenix-auto-enroller-linux-x64

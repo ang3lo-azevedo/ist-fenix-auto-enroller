@@ -50,7 +50,10 @@ def detect_shift_types(shifts, course_loads=None):
             add_from_raw(shift.get("lessonType") or "")
             name = shift.get("name") or ""
             if name:
-                if "T" in name and "L" not in name:
+                # Check TP before T to avoid misclassification
+                if "TP" in name:
+                    types.add("TP")
+                elif "T" in name and "L" not in name:
                     types.add("T")
                 if "L" in name:
                     types.add("L")

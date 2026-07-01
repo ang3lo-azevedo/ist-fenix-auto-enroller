@@ -14,6 +14,7 @@ Highlights
 - Build unified schedules for multiple courses
 - Time conflict detection
 - Selenium-based automatic enrollment
+- Dry-run mode to preview what would be enrolled without submitting
 - Persisted configuration (config.json)
 
 How to install
@@ -33,18 +34,39 @@ Option A - GitHub Releases (recommended)
 
 Latest release: https://github.com/ang3lo-azevedo/ist-fenix-auto-enroller/releases
 
-Option B - Nix
-1. Run directly or enter a dev shell.
+Option B - Nix (recommended on NixOS)
+The flake works on `x86_64-linux` and `aarch64-linux`.
 
+Run it directly, without installing:
 ```sh
-nix run
+nix run github:ang3lo-azevedo/ist-fenix-auto-enroller
 ```
-or
 
+Install it into your user profile (adds the "IST Fénix Auto Enroller"
+application menu entry with an icon):
 ```sh
-nix develop
-python3 main.py
+nix profile install github:ang3lo-azevedo/ist-fenix-auto-enroller
 ```
+
+Install it system-wide in a NixOS configuration via the overlay:
+```nix
+{
+  inputs.ist-fenix-auto-enroller.url = "github:ang3lo-azevedo/ist-fenix-auto-enroller";
+
+  # in your NixOS module:
+  nixpkgs.overlays = [ inputs.ist-fenix-auto-enroller.overlays.default ];
+  environment.systemPackages = [ pkgs.ist-fenix-auto-enroller ];
+}
+```
+
+Or work on it from a checkout:
+```sh
+nix run          # run the app
+nix develop      # dev shell with chromium + chromedriver, then: python3 main.py
+```
+
+Chromium and chromedriver are bundled by the flake, so no separate browser
+setup is needed.
 
 Option C - Python source
 1. Clone this repository.
@@ -61,12 +83,17 @@ How to use
 2. Search and select the courses you want.
 3. Click [Build] Build Schedule and pick the shifts from both periods.
 4. Add shifts to the enrollment queue.
-5. Login and start enrollment.
+5. Login.
+6. Optionally click [Test] Dry Run to preview which shifts the bot would
+   enroll in, without submitting anything.
+7. Start enrollment (or schedule it for a specific time with the timed button).
 
 Project structure
 -----------------
 - main.py        Entry point
 - config.json    Persisted configuration
+- flake.nix      Nix package, dev shell, overlay and desktop entry
+- assets/        Application icon
 - src/api.py     Fenix API client
 - src/bot.py     Selenium automation
 - src/gui/       Tkinter UI components

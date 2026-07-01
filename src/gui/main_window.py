@@ -494,6 +494,10 @@ class GUI(DegreeSelectorMixin, CourseSelectorMixin, ScheduleBuilderMixin, Enroll
             command=self.schedule_enrollment, state="disabled")
         self.timed_btn.pack(side="left", padx=5)
         
+        self.dry_run_btn = ttk.Button(top_row, text="[Test] Dry Run", 
+            command=self.start_dry_run, state="disabled")
+        self.dry_run_btn.pack(side="left", padx=5)
+        
         # Log frame as a resizable pane (always visible at bottom)
         log_frame = tk.Frame(panes, bg=self.BG_PRIMARY, highlightthickness=0, bd=0, relief="flat")
         log_frame.configure(height=120)

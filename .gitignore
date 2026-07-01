@@ -27,3 +27,5 @@ html/
 
 # OS files
 .DS_Store
+
+.c*

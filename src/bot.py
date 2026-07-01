@@ -2,6 +2,7 @@ import time
 import re
 import os
 import json
+import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 from selenium import webdriver
@@ -72,14 +73,100 @@ class FenixBot:
                 time.sleep(2)
         return False
 
+    def _find_writable_logs_dir(self) -> Path:
+        """Find writable logs directory using same logic as config.json saving."""
+        # Use specific markers that uniquely identify the ist-fenix-auto-enroller project
+        required_markers = ["src/gui/main_window.py", "main.py"]
+        optional_markers = ["flake.nix", "README.md"]
+        
+        def is_nix_store(path: Path) -> bool:
+            try:
+                return str(path).startswith("/nix/store/")
+            except Exception:
+                return False
+        
+        def is_project_root(path: Path) -> bool:
+            """Check if path has the required markers for ist-fenix-auto-enroller."""
+            return all((path / marker).exists() for marker in required_markers)
+        
+        def is_writable(path: Path) -> bool:
+            try:
+                if not path.exists():
+                    path.mkdir(parents=True, exist_ok=True)
+                test_file = path / ".write_test"
+                test_file.touch()
+                test_file.unlink()
+                return True
+            except (OSError, PermissionError):
+                return False
+        
+        # Try FENIX_PROJECT_ROOT first
+        env_root = os.environ.get("FENIX_PROJECT_ROOT")
+        if env_root:
+            root_path = Path(env_root).resolve()
+            if root_path.exists() and not is_nix_store(root_path) and is_project_root(root_path):
+                logs_path = root_path / "logs"
+                if is_writable(logs_path):
+                    return logs_path
+        
+        # Try PWD and cwd
+        candidates = []
+        env_pwd = os.environ.get("PWD")
+        if env_pwd:
+            candidates.append(Path(env_pwd).resolve())
+        candidates.append(Path.cwd().resolve())
+        
+        for base in candidates:
+            if is_nix_store(base):
+                continue
+            # Walk up to find project root
+            for parent in [base, *base.parents]:
+                if is_project_root(parent):
+                    logs_path = parent / "logs"
+                    if is_writable(logs_path):
+                        return logs_path
+        
+        # Last resort: search in home directory for project
+        home = Path.home()
+        
+        for root, dirs, files in os.walk(home):
+            root_path = Path(root)
+            
+            if is_nix_store(root_path):
+                dirs[:] = []
+                continue
+            
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".") and d not in {".git", "node_modules", "__pycache__"}
+            ]
+            
+            if is_project_root(root_path):
+                logs_path = root_path / "logs"
+                if is_writable(logs_path):
+                    return logs_path
+        
+        return None
+    
     def start_capture(self):
         try:
-            base = Path(os.environ.get("FENIX_PROJECT_ROOT", Path.cwd()))
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            capture = base / "logs" / f"enrollment_{ts}"
-            capture.mkdir(parents=True, exist_ok=True)
-            self.capture_dir = capture
-        except Exception:
+            
+            # Find writable logs directory using same logic as config.json
+            logs_dir = self._find_writable_logs_dir()
+            if logs_dir:
+                capture = logs_dir / f"enrollment_{ts}"
+                capture.mkdir(parents=True, exist_ok=True)
+                self.capture_dir = capture
+                print(f"[CAPTURE] Recording session started: {self.capture_dir}")
+            else:
+                # Fallback to /tmp if no writable logs directory found
+                import tempfile
+                capture = Path(tempfile.mkdtemp(prefix=f"fenix_enrollment_{ts}_"))
+                self.capture_dir = capture
+                print(f"[CAPTURE] Using temp directory (no writable logs found): {self.capture_dir}")
+        except Exception as e:
+            print(f"[CAPTURE] ERROR: Failed to start capture: {e}")
             self.capture_dir = None
 
     def _save_page(self, label: str):
@@ -88,8 +175,9 @@ class FenixBot:
         try:
             path = self.capture_dir / f"{label}.html"
             path.write_text(self.driver.page_source or "", encoding="utf-8")
-        except Exception:
-            pass
+            print(f"[CAPTURE] Saved page: {label}.html")
+        except Exception as e:
+            print(f"[CAPTURE] ERROR saving page {label}: {e}")
 
     def _save_requests(self, label: str):
         if not self.capture_dir:
@@ -99,8 +187,9 @@ class FenixBot:
             path = self.capture_dir / f"{label}.network.json"
             with path.open("w", encoding="utf-8") as f:
                 json.dump(logs, f, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+            print(f"[CAPTURE] Saved network log: {label}.network.json ({len(logs)} entries)")
+        except Exception as e:
+            print(f"[CAPTURE] ERROR saving network log {label}: {e}")
 
     def close(self):
         try:
@@ -294,32 +383,23 @@ class FenixBot:
         for attempt in range(max_retries):
             try:
                 self.ensure_single_window()
+                # First navigate to the enrollment landing page
                 self.driver.get(f"{self.base_url}/student/enroll/shift-enrollment")
                 time.sleep(2)
 
                 self._save_page("shift_enrollment_landing")
                 self._save_requests("shift_enrollment_landing")
 
-                # If enrollment is closed, wait until it opens
-                if not self._wait_if_enrollment_closed():
-                    return False
-
-                self._save_page("shift_enrollment_after_wait")
-                self._save_requests("shift_enrollment_after_wait")
-
-                # If a "Continue" form exists, submit it
+                # Click the Continue button to proceed to enrollment manager
                 if self._submit_continue_if_present():
                     time.sleep(2)
-
-                # Check again after continue and any redirects
-                if not self._wait_if_enrollment_closed():
-                    return False
 
                 self._save_page("shift_enrollment_after_continue")
                 self._save_requests("shift_enrollment_after_continue")
 
                 return True
             except Exception as e:
+                print(f"[BOT] Error navigating to enrollments (attempt {attempt + 1}): {e}")
                 if attempt < max_retries - 1:
                     time.sleep(3)
                 continue
@@ -426,6 +506,19 @@ class FenixBot:
 
     def _submit_continue_if_present(self) -> bool:
         try:
+            # First, try to find "Continue" or "Continuar" link/button
+            # Check for link with text "Continue" or "Continuar"
+            try:
+                continue_link = self.driver.find_element(By.XPATH, 
+                    "//a[contains(text(), 'Continue') or contains(text(), 'Continuar')]")
+                print(f"[BOT] Found Continue link, clicking...")
+                continue_link.click()
+                time.sleep(2)
+                return True
+            except:
+                pass
+            
+            # Try form-based continue
             form = self.driver.find_elements(By.XPATH, "//form[@action='/student/studentShiftEnrollmentManager.do']")
             if not form:
                 return False
@@ -436,100 +529,506 @@ class FenixBot:
             # fallback: submit the form via JS
             self.driver.execute_script("arguments[0].submit();", form[0])
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[BOT] No continue button/link found: {e}")
             return False
     
-    def find_and_enroll_shift(self, course_name: str, shift_type: str, shift_name: str = "", max_retries=5,
-                              retry_window_seconds: int = 900, retry_interval_seconds: int = 20) -> bool:
-        deadline = datetime.now() + timedelta(seconds=max(0, retry_window_seconds))
-        last_enroll_url = ""
-
-        def try_enroll_from_links(links) -> bool:
-            nonlocal last_enroll_url
-            for link in links:
-                try:
-                    href = link.get_attribute("href") or ""
-                    text = link.text.lower()
-
-                    if "enrollStudentInShifts" not in href:
-                        continue
-
-                    if shift_name:
-                        if shift_name.lower() not in (text + " " + href):
-                            continue
-                    else:
-                        if course_name.lower() not in text or shift_type.lower() not in text:
-                            continue
-
-                    last_enroll_url = href
-                    self.driver.execute_script("arguments[0].scrollIntoView(true);", link)
-                    time.sleep(1)
-                    link.click()
-                    time.sleep(3)
-
-                    self._save_page("enroll_after_click")
-                    self._save_requests("enroll_after_click")
-
-                    try:
-                        confirm = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Confirmar')]")
-                        confirm.click()
-                        time.sleep(2)
-                    except:
-                        pass
-
-                    page_source = self.driver.page_source.lower()
-                    if any(kw in page_source for kw in ["sucesso", "success", "enrolled", "inscrito"]):
-                        return True
-
-                    self.driver.back()
-                    time.sleep(2)
-                except Exception:
-                    try:
-                        self.driver.back()
-                    except:
-                        pass
-                    time.sleep(2)
-            return False
-
+    def navigate_to_course_enrollment(self, course_name: str, max_retries=3) -> bool:
+        """Navigate to the specific course's enrollment page from the main enrollment page."""
         for attempt in range(max_retries):
             try:
-                self._save_page("enroll_search_start")
-                self._save_requests("enroll_search_start")
-                links = self.driver.find_elements(By.TAG_NAME, "a")
-                if try_enroll_from_links(links):
-                    return True
+                print(f"[BOT] Searching for course: {course_name}")
 
-                # Keep retrying the same enrollment page until a seat opens
-                while datetime.now() < deadline:
-                    time.sleep(retry_interval_seconds)
+                # Look for course name in the page
+                page_source = self.driver.page_source.lower()
+                course_lower = course_name.lower()
+
+                # Primary path: on the enrollment manager the "Book" links have the
+                # generic text "Book" (href=proceedToShiftEnrolment) and the course
+                # name lives in a sibling cell of the SAME table row. Locate the row
+                # by the course name, then click the Book link inside that row.
+                normalized_course = self._normalize_text(course_name)
+                cells = self.driver.find_elements(By.XPATH, "//td | //th")
+                for cell in cells:
                     try:
-                        if last_enroll_url:
-                            self.driver.get(last_enroll_url)
-                        else:
-                            self.driver.refresh()
-                        time.sleep(2)
-                    except Exception:
-                        break
+                        cell_text = cell.text or ""
+                        if not cell_text.strip():
+                            continue
+                        if course_lower in cell_text.lower() or normalized_course in self._normalize_text(cell_text):
+                            row = cell.find_element(By.XPATH, "./ancestor::tr[1]")
+                            book_links = row.find_elements(
+                                By.XPATH, ".//a[contains(@href, 'proceedToShiftEnrolment')]"
+                            )
+                            if book_links:
+                                print(f"[BOT] Found Book link for {course_name} in course row")
+                                self.driver.execute_script("arguments[0].scrollIntoView(true);", book_links[0])
+                                time.sleep(0.5)
+                                book_links[0].click()
+                                time.sleep(2)
+                                print(f"[BOT] Navigated to course enrollment page for {course_name}")
+                                return True
+                    except:
+                        continue
 
-                    links = self.driver.find_elements(By.TAG_NAME, "a")
-                    if try_enroll_from_links(links):
-                        return True
-                    # Continue polling until deadline
+                # Try to find a link containing the course name
+                # These could be in forms, links, or table cells
+                all_links = self.driver.find_elements(By.TAG_NAME, "a")
                 
+                for link in all_links:
+                    try:
+                        link_text = (link.text or "").lower()
+                        href = link.get_attribute("href") or ""
+                        
+                        # Check if this link is related to our course
+                        # Match course name or course code
+                        if course_lower in link_text or course_lower in href.lower():
+                            # Also check if it's a navigation link (not just informational)
+                            if "proceedToShiftEnrolment" in href or "executionCourse" in href:
+                                print(f"[BOT] Found course link: {link_text[:50]}")
+                                self.driver.execute_script("arguments[0].scrollIntoView(true);", link)
+                                time.sleep(0.5)
+                                link.click()
+                                time.sleep(2)
+                                print(f"[BOT] Navigated to course enrollment page for {course_name}")
+                                return True
+                        
+                        # Also try matching without accents or special chars
+                        # (e.g., "Producao" matches "Produção")
+                        import unicodedata
+                        def normalize(s):
+                            return ''.join(c for c in unicodedata.normalize('NFD', s) 
+                                         if unicodedata.category(c) != 'Mn').lower()
+                        
+                        if normalize(course_name) in normalize(link_text):
+                            if "proceedToShiftEnrolment" in href or "executionCourse" in href:
+                                print(f"[BOT] Found course link (normalized match): {link_text[:50]}")
+                                self.driver.execute_script("arguments[0].scrollIntoView(true);", link)
+                                time.sleep(0.5)
+                                link.click()
+                                time.sleep(2)
+                                print(f"[BOT] Navigated to course enrollment page for {course_name}")
+                                return True
+                    except:
+                        continue
+                
+                # If not found, try looking in headers or other text elements
+                headers = self.driver.find_elements(By.XPATH, "//h2 | //h3 | //h4 | //td[@class='disciplina']")
+                for header in headers:
+                    try:
+                        header_text = (header.text or "").lower()
+                        if course_lower in header_text:
+                            # Found the course, now look for nearby enrollment links
+                            parent = header.find_element(By.XPATH, "..//..")
+                            nearby_links = parent.find_elements(By.TAG_NAME, "a")
+                            for link in nearby_links:
+                                href = link.get_attribute("href") or ""
+                                if "proceedToShiftEnrolment" in href or "executionCourse" in href:
+                                    print(f"[BOT] Found nearby enrollment link for {course_name}")
+                                    link.click()
+                                    time.sleep(2)
+                                    return True
+                    except:
+                        continue
+                
+                print(f"[BOT] Course {course_name} not found on this page (attempt {attempt + 1}/{max_retries})")
                 if attempt < max_retries - 1:
-                    time.sleep(2)
+                    time.sleep(1)
                     self.driver.refresh()
+                    time.sleep(2)
                     
             except Exception as e:
+                print(f"[BOT] Error navigating to course enrollment: {e}")
                 if attempt < max_retries - 1:
-                    time.sleep(2)
-                    try:
-                        self.driver.refresh()
-                    except:
-                        pass
+                    time.sleep(1)
                 continue
         
         return False
+
+    def _extract_shift_enrollment_urls(self, shift_name: str = "", shift_type: str = "") -> list:
+        """Extract all enrollStudentInShifts URLs from current page and match by shift name/type."""
+        try:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            
+            enrollment_links = []
+            
+            # Find all links with enrollStudentInShifts
+            for link in soup.find_all('a', href=True):
+                href = link.get('href', '')
+                if 'enrollStudentInShifts' in href:
+                    # Get the parent context to extract shift info
+                    parent_text = ""
+                    parent = link.parent
+                    for _ in range(5):
+                        if parent:
+                            parent_text += " " + parent.get_text(strip=True)
+                            parent = parent.parent
+                        else:
+                            break
+                    
+                    parent_text = parent_text.lower()
+                    
+                    # Try to extract shiftId from URL for better matching
+                    shift_id_match = re.search(r'shiftId=(\d+)', href)
+                    shift_id = shift_id_match.group(1) if shift_id_match else None
+                    
+                    enrollment_links.append({
+                        'url': href if href.startswith('http') else f"{self.base_url}{href}",
+                        'shiftId': shift_id,
+                        'context': parent_text,
+                        'link_text': link.get_text(strip=True).lower()
+                    })
+            
+            print(f"[BOT] Found {len(enrollment_links)} enrollment URLs on page")
+            
+            # Filter by shift name or type
+            if shift_name:
+                # Try different variations of the shift name
+                search_names = [
+                    shift_name.lower(),
+                    shift_name.lower().replace(" ", ""),
+                    shift_name.split("(")[0].strip().lower(),
+                ]
+                
+                matched = []
+                for link_info in enrollment_links:
+                    context = link_info['context'] + " " + link_info['link_text']
+                    if any(name in context for name in search_names):
+                        matched.append(link_info)
+                
+                if matched:
+                    print(f"[BOT] Matched {len(matched)} URLs for shift '{shift_name}'")
+                    return matched
+            
+            if shift_type:
+                shift_type_lower = shift_type.lower()
+                matched = [link for link in enrollment_links 
+                          if shift_type_lower in link['context'] or shift_type_lower in link['link_text']]
+                if matched:
+                    print(f"[BOT] Matched {len(matched)} URLs for type '{shift_type}'")
+                    return matched
+            
+            return enrollment_links
+            
+        except Exception as e:
+            print(f"[BOT] Error extracting enrollment URLs: {e}")
+            return []
+
+    def _extract_common_enrollment_params(self):
+        """Extract common enrollment parameters that are the same for all shifts."""
+        try:
+            from bs4 import BeautifulSoup
+            from urllib.parse import urlparse, parse_qs
+            
+            if hasattr(self, '_cached_enrollment_params'):
+                return self._cached_enrollment_params
+            
+            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            
+            # Find any enrollment or shift management link
+            sample_link = soup.find('a', href=lambda x: x and ('enrollStudentInShifts' in x or 'shiftId=' in x or 'removeStudentFromShifts' in x))
+            if not sample_link:
+                print(f"[BOT] No enrollment link found to extract common parameters")
+                return None
+            
+            sample_url = sample_link.get('href')
+            if not sample_url.startswith('http'):
+                sample_url = f"{self.base_url}{sample_url}"
+            
+            parsed = urlparse(sample_url)
+            params = parse_qs(parsed.query)
+            
+            common_params = {
+                'registrationOID': params.get('registrationOID', [None])[0],
+                'executionSemesterID': params.get('executionSemesterID', [None])[0],
+            }
+            
+            if not common_params['registrationOID'] or not common_params['executionSemesterID']:
+                print(f"[BOT] Could not extract required common parameters")
+                return None
+            
+            print(f"[BOT] Extracted common parameters: {common_params}")
+            self._cached_enrollment_params = common_params
+            return common_params
+            
+        except Exception as e:
+            print(f"[BOT] Error extracting common enrollment params: {e}")
+            return None
+
+    def _try_construct_enrollment_url(self, course_name: str, shift_name: str = "", shift_type: str = "") -> str:
+        """Try to construct an enrollment URL by finding the shift link and extracting its parameters."""
+        try:
+            from bs4 import BeautifulSoup
+            from urllib.parse import urlparse, parse_qs
+            
+            # Get common parameters (cached)
+            common_params = self._extract_common_enrollment_params()
+            if not common_params:
+                return None
+            
+            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            
+            # Find the specific shift link by matching shift name
+            if shift_name:
+                print(f"[BOT] Searching for shift {shift_name} in page...")
+                
+                for link in soup.find_all('a', href=lambda x: x and ('shiftId=' in x or 'enrollStudentInShifts' in x)):
+                    link_text = link.get_text(strip=True).lower()
+                    parent_text = ""
+                    parent = link.parent
+                    for _ in range(5):
+                        if parent:
+                            parent_text += " " + parent.get_text(strip=True).lower()
+                            parent = parent.parent
+                    
+                    # Check if this link is for our shift
+                    search_names = [
+                        shift_name.lower(),
+                        shift_name.lower().replace(" ", ""),
+                        shift_name.split("(")[0].strip().lower(),
+                    ]
+                    
+                    full_context = (link_text + " " + parent_text).lower()
+                    if any(name in full_context for name in search_names):
+                        href = link.get('href')
+                        if not href.startswith('http'):
+                            href = f"{self.base_url}{href}"
+                        
+                        parsed = urlparse(href)
+                        params = parse_qs(parsed.query)
+                        
+                        shift_id = params.get('shiftId', [None])[0]
+                        class_id = params.get('classId', [None])[0]
+                        execution_course_id = params.get('executionCourseID', [None])[0]
+                        checksum = params.get('_request_checksum_', [None])[0]
+                        
+                        if shift_id and checksum:
+                            # Construct the enrollment URL with all parameters
+                            url = (f"{self.base_url}/student/enrollStudentInShifts.do?"
+                                  f"registrationOID={common_params['registrationOID']}&"
+                                  f"shiftId={shift_id}&"
+                                  f"classId={class_id or ''}&"
+                                  f"executionCourseID={execution_course_id or ''}&"
+                                  f"executionSemesterID={common_params['executionSemesterID']}&"
+                                  f"weekStart=null&weekEnd=null&"
+                                  f"_request_checksum_={checksum}")
+                            
+                            print(f"[BOT] Constructed enrollment URL for {shift_name}: shiftId={shift_id}")
+                            return url
+            
+            return None
+            
+        except Exception as e:
+            print(f"[BOT] Error constructing enrollment URL: {e}")
+            return None
+
+    def find_and_enroll_shift(self, course_name: str, shift_type: str, shift_name: str = "", max_retries=5,
+                              retry_window_seconds: int = 900, retry_interval_seconds: int = 20, dry_run: bool = False) -> bool:
+        deadline = datetime.now() + timedelta(seconds=max(0, retry_window_seconds))
+        last_enroll_url = ""
+        enrolled_successfully = False
+
+        try:
+            # Normalize shift type for display matching (T, L, TP, etc.)
+            shift_type_display = shift_type.replace("TEORICO_PRATICA", "TP").replace("TEORICA", "T").replace("LABORATORIAL", "L")
+            if len(shift_type) > 2:
+                shift_type_display = shift_type_display.upper()
+
+            def is_shift_already_enrolled() -> bool:
+                """Check if this specific shift is already booked.
+
+                Fenix marks a booked shift with a cancel control
+                ("Cancel Booking" -> unEnroleStudentFromShift) rendered in the
+                same row/block as the shift code. We only trust that control.
+
+                We deliberately do NOT fall back to a page-wide scan for
+                "reserved"/"enrolled" text: those words are always present as
+                column labels on the enrollment manager page, so combined with a
+                loose substring match on the shift code they produce false
+                positives that make the bot skip shifts it never actually booked
+                and report false success.
+                """
+                try:
+                    cancel_links = self.driver.find_elements(
+                        By.XPATH,
+                        "//a[contains(@href, 'unEnroleStudentFromShift') or "
+                        "contains(@href, 'removeStudentFromShifts') or "
+                        "contains(text(), 'Cancel') or contains(text(), 'Cancelar')]"
+                    )
+                    for cancel_link in cancel_links:
+                        try:
+                            block = ""
+                            node = cancel_link
+                            for _ in range(4):
+                                node = node.find_element(By.XPATH, "..")
+                                block = (block + " " + (node.text or "")).lower()
+
+                            if shift_name:
+                                if shift_name.lower() in block:
+                                    print(f"[BOT] Shift {shift_name} is already booked (cancel link found). Skipping.")
+                                    return True
+                            elif shift_type_display.lower() in block:
+                                print(f"[BOT] Shift with type {shift_type} is already booked. Skipping.")
+                                return True
+                        except:
+                            pass
+                except:
+                    pass
+                return False
+
+            def try_enroll_from_urls(enrollment_urls) -> bool:
+                """Try to enroll by directly navigating to enrollment URLs"""
+                nonlocal last_enroll_url
+
+                for url_info in enrollment_urls:
+                    try:
+                        url = url_info['url']
+                        last_enroll_url = url
+
+                        print(f"[BOT] Found enrollment URL for {shift_name or shift_type}")
+
+                        if dry_run:
+                            print(f"[DRY-RUN] Would navigate to: {url[:80]}...")
+                            print(f"[DRY-RUN] Would enroll in: {shift_name or shift_type}")
+                            return True
+
+                        print(f"[BOT] Navigating to enrollment URL for {shift_name or shift_type}")
+                        self.driver.get(url)
+                        time.sleep(2)
+
+                        self._save_page("enroll_after_navigation")
+                        self._save_requests("enroll_after_navigation")
+
+                        page_source = self.driver.page_source.lower()
+
+                        try:
+                            confirm = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Confirmar')] | //input[@value='Confirmar']")
+                            print(f"[BOT] Clicking confirmation button")
+                            confirm.click()
+                            time.sleep(2)
+                        except:
+                            pass
+
+                        page_source = self.driver.page_source.lower()
+                        if any(kw in page_source for kw in ["sucesso", "success", "enrolled", "inscrito", "confirmada"]):
+                            print(f"[BOT] Successfully enrolled in {shift_name or shift_type}")
+                            return True
+
+                        if any(kw in page_source for kw in ["erro", "error", "lotada", "full", "capacity"]):
+                            print(f"[BOT] Enrollment failed (shift may be full or unavailable)")
+                    except Exception as e:
+                        print(f"[BOT] Error while trying enrollment URL: {e}")
+                        continue
+
+                return False
+
+            for attempt in range(max_retries):
+                try:
+                    self._save_page("enroll_search_start")
+                    self._save_requests("enroll_search_start")
+
+                    if is_shift_already_enrolled():
+                        return True
+
+                    print(f"[BOT] Attempting to construct enrollment URL for {shift_name or shift_type}...")
+                    constructed_url = self._try_construct_enrollment_url(course_name, shift_name, shift_type_display)
+
+                    if constructed_url:
+                        print(f"[BOT] Successfully constructed enrollment URL, trying direct enrollment...")
+                        if try_enroll_from_urls([{'url': constructed_url, 'shiftId': None, 'context': '', 'link_text': ''}]):
+                            enrolled_successfully = True
+                            break
+                        else:
+                            print(f"[BOT] Direct enrollment with constructed URL failed, falling back to search...")
+                    else:
+                        print(f"[BOT] Could not construct URL from current page...")
+
+                    print(f"[BOT] Navigating to course page to find shift links...")
+                    if not self.navigate_to_course_enrollment(course_name):
+                        print(f"[BOT] Failed to navigate to course enrollment page for {course_name}")
+                        if attempt < max_retries - 1:
+                            continue
+                        return False
+
+                    constructed_url = self._try_construct_enrollment_url(course_name, shift_name, shift_type_display)
+                    if constructed_url:
+                        print(f"[BOT] Constructed URL from course page, enrolling...")
+                        if try_enroll_from_urls([{'url': constructed_url, 'shiftId': None, 'context': '', 'link_text': ''}]):
+                            enrolled_successfully = True
+                            break
+
+                    enrollment_urls = self._extract_shift_enrollment_urls(shift_name, shift_type_display)
+
+                    if not enrollment_urls:
+                        print(f"[BOT] No enrollment URLs found for {shift_name or shift_type}")
+                        if attempt < max_retries - 1:
+                            time.sleep(2)
+                            self.driver.refresh()
+                            time.sleep(2)
+                            continue
+                        print(f"[BOT] Failed to find enrollment URL after {max_retries} attempts")
+                        return False
+
+                    if try_enroll_from_urls(enrollment_urls):
+                        enrolled_successfully = True
+                        break
+
+                    while datetime.now() < deadline:
+                        time.sleep(retry_interval_seconds)
+                        try:
+                            if last_enroll_url:
+                                print(f"[BOT] Retrying enrollment URL...")
+                                self.driver.get(last_enroll_url)
+                            else:
+                                self.driver.refresh()
+                            time.sleep(2)
+
+                            page_source = self.driver.page_source.lower()
+                            if any(kw in page_source for kw in ["sucesso", "success", "enrolled", "inscrito", "confirmada"]):
+                                print(f"[BOT] Successfully enrolled in {shift_name or shift_type}")
+                                enrolled_successfully = True
+                                break
+                        except Exception:
+                            break
+
+                    if enrolled_successfully:
+                        break
+
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                        self.driver.refresh()
+
+                except Exception as e:
+                    print(f"[BOT] Error during enrollment attempt {attempt + 1}: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                        try:
+                            self.driver.refresh()
+                        except:
+                            pass
+                    continue
+        
+        finally:
+            # Always navigate back to main enrollment page for next course
+            try:
+                print(f"[BOT] Navigating back to main enrollment page...")
+                self.driver.get(f"{self.base_url}/student/enroll/shift-enrollment")
+                time.sleep(2)
+                # Click continue again
+                self._submit_continue_if_present()
+                time.sleep(2)
+            except Exception as e:
+                print(f"[BOT] Error navigating back: {e}")
+        
+        if not enrolled_successfully:
+            print(f"[BOT] Failed to enroll in {shift_name or shift_type} after {max_retries} attempts")
+        
+        return enrolled_successfully
+    
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text for matching (remove accents, lowercase)"""
+        return ''.join(c for c in unicodedata.normalize('NFD', text) 
+                      if unicodedata.category(c) != 'Mn').lower()
     
     def close(self):
         if self.driver:

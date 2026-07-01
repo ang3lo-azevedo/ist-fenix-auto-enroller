@@ -192,8 +192,30 @@ class EnrollmentManagerMixin:
                 time.sleep(0.1)
         
         threading.Thread(target=schedule_thread, daemon=True).start()
+
+    def start_dry_run(self):
+        """Test bot without actually enrolling - shows what would be enrolled"""
+        if not self.enrollments:
+            messagebox.showwarning("Warning", "Add enrollments")
+            return
         
-    def start_enrollment(self):
+        result = messagebox.askyesno(
+            "Dry Run Test",
+            "This will test the enrollment bot WITHOUT actually enrolling.\n\n"
+            "The bot will:\n"
+            "• Navigate to the enrollment page\n"
+            "• Find your selected shifts\n"
+            "• Show what it would enroll in\n"
+            "• NOT submit any enrollments\n\n"
+            "Continue?"
+        )
+        
+        if not result:
+            return
+        
+        self.start_enrollment(dry_run=True)
+        
+    def start_enrollment(self, dry_run: bool = False):
         if not self.enrollments:
             messagebox.showwarning("Warning", "Add enrollments")
             return
@@ -216,14 +238,16 @@ class EnrollmentManagerMixin:
         
         self.enroll_btn.configure(state="disabled")
         self.timed_btn.configure(state="disabled")
+        self.dry_run_btn.configure(state="disabled")
         self.cancel_btn.configure(state="normal")
-        self.log("Starting enrollment...", "WARNING")
+        
+        mode_str = "[DRY-RUN] " if dry_run else ""
+        self.log(f"{mode_str}Starting enrollment...", "WARNING")
         
         def enroll_thread():
             try:
                 # Browser already logged in from login() call
-                self.root.after(0, lambda: self.log("Navigating to enrollments..."))
-                self.bot.on_enrollment_wait = self._notify_enrollment_wait
+                self.root.after(0, lambda: self.log(f"{mode_str}Navigating to enrollments..."))
                 if not self.bot.navigate_to_enrollments():
                     self.root.after(0, lambda: self.log("Failed to navigate to enrollments", "ERROR"))
                     return
@@ -257,26 +281,33 @@ class EnrollmentManagerMixin:
                             continue
 
                         self.root.after(0, lambda c=course, t=shift_type:
-                                      self.log(f"Searching for {c} ({t})..."))
+                                      self.log(f"{mode_str}Searching for {c} ({t})..."))
 
                         if self.bot.find_and_enroll_shift(
                             course,
                             shift_type,
                             shift_name,
                             retry_window_seconds=per_shift_window,
-                            retry_interval_seconds=per_shift_interval
+                            retry_interval_seconds=per_shift_interval,
+                            dry_run=dry_run
                         ):
                             enrolled += 1
                             remaining.remove(enrollment)
-                            self.root.after(0, lambda c=course:
-                                          self.log(f"✓ Enrolled in {c}", "SUCCESS"))
+                            action_str = "Would enroll in" if dry_run else "Enrolled in"
+                            self.root.after(0, lambda c=course, a=action_str:
+                                          self.log(f"✓ {a} {c}", "SUCCESS"))
 
                     if remaining and datetime.now() < overall_deadline:
                         self.root.after(0, lambda: self.log(
                             f"Round robin retry: {len(remaining)} shifts still pending...", "WARNING"
                         ))
 
-                msg = f"Done! {enrolled}/{total} enrolled"
+                msg = f"Done! {enrolled}/{total}" 
+                if dry_run:
+                    msg = f"[DRY-RUN] {msg} would be enrolled"
+                else:
+                    msg += " enrolled"
+                    
                 if remaining:
                     msg = f"Done! {enrolled}/{total} enrolled (pending: {len(remaining)})"
                 self.root.after(0, lambda: self.log(msg, "SUCCESS"))
@@ -287,6 +318,7 @@ class EnrollmentManagerMixin:
             finally:
                 self.root.after(0, lambda: self.enroll_btn.configure(state="normal"))
                 self.root.after(0, lambda: self.timed_btn.configure(state="normal"))
+                self.root.after(0, lambda: self.dry_run_btn.configure(state="normal"))
                 self.root.after(0, lambda: self.cancel_btn.configure(state="disabled"))
         
         threading.Thread(target=enroll_thread, daemon=True).start()
@@ -355,6 +387,7 @@ class EnrollmentManagerMixin:
         self.login_btn.configure(state="disabled", text="Logged In")
         self.enroll_btn.configure(state="normal")
         self.timed_btn.configure(state="normal")
+        self.dry_run_btn.configure(state="normal")
         self.log("Login successful!", "SUCCESS")
         
     def on_login_failed(self, error: str):

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e5edff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded badge background -->
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="#0b0f14" opacity="0.08"/>
+
+  <!-- graduation cap board -->
+  <path d="M128 66 L224 108 L128 150 L32 108 Z" fill="url(#cap)"/>
+  <!-- board underside shading -->
+  <path d="M128 150 L224 108 L128 132 L32 108 Z" fill="#c7d6ff" opacity="0.55"/>
+
+  <!-- cap base (head band) -->
+  <path d="M92 128 L92 158 Q92 182 128 182 Q164 182 164 158 L164 128 L128 145 Z" fill="url(#cap)"/>
+  <path d="M92 128 L128 145 L164 128 L164 138 L128 155 L92 138 Z" fill="#c7d6ff" opacity="0.5"/>
+
+  <!-- tassel -->
+  <path d="M128 108 L204 108 L204 168" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="204" cy="176" r="11" fill="#facc15"/>
+
+  <!-- enrolled check badge -->
+  <circle cx="196" cy="196" r="38" fill="#22c55e" stroke="#0b0f14" stroke-width="6"/>
+  <path d="M180 197 L192 209 L214 184" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
